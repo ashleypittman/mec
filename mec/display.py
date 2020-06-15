@@ -15,16 +15,17 @@ log = logging.getLogger('e-paper')
 class ePaper():
 
     def __init__(self, conf):
-        self.font_size = 14
-        self.font = ImageFont.truetype(FONT_FILE, self.font_size)
-        self._showing = None
-        self._to_show = None
         if 'waveshare_path' in conf:
              sys.path.append(conf['waveshare_path'])
         try:
             self._wave = __import__('waveshare_epd.epd2in7')
         except ModuleNotFoundError:
             self._wave = None
+            return
+        self.font_size = 14
+        self.font = ImageFont.truetype(FONT_FILE, self.font_size)
+        self._showing = None
+        self._to_show = None
 
     def sample(self, conn, sessions, culm_values, sockets):
 

@@ -67,18 +67,19 @@ def main():
 
     sockets = []
 
-    for socket in config['sockets']:
-        obj = mec.tpsockets.PowerSocketConnection(socket['ip'])
-        if 'mode' in socket:
-            obj.mode = socket['mode']
-        if 'power' in socket:
-            obj.set_initial_power(socket['power'])
-        if 'night' in socket and socket['night']:
-            obj.on_time = datetime.datetime(year=1977, month=1, day=1,
-                                            hour=0, minute=15)
-            obj.duration = datetime.timedelta(hours=4)
-        obj.load_todays_power()
-        sockets.append(obj)
+    if 'sockets' in config:
+        for socket in config['sockets']:
+            obj = mec.tpsockets.PowerSocketConnection(socket['ip'])
+            if 'mode' in socket:
+                obj.mode = socket['mode']
+            if 'power' in socket:
+                obj.set_initial_power(socket['power'])
+            if 'night' in socket and socket['night']:
+                obj.on_time = datetime.datetime(year=1977, month=1, day=1,
+                                                hour=0, minute=15)
+                obj.duration = datetime.timedelta(hours=4)
+            obj.load_todays_power()
+            sockets.append(obj)
 
     if 'house_data' in config:
         house_conf = config['house_data']
