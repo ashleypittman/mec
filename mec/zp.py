@@ -424,16 +424,6 @@ class MyEnergiHost:
         except socket.timeout:
             raise DataTimeout
 
-    def check_connection(self):
-        """Make initial connection and load the server."""
-
-        raw = self._load()
-        for device in raw:
-            if 'asn' in device:
-                if device['asn'] != self.__host:
-                    self.__host = device['asn']
-                    log.debug('Setting host to %s', self.__host)
-
     def refresh(self, check=False):
         """Fetch most recent data."""
         self.state = MyEnergi(self._load(), check, self._house_conf)
@@ -520,16 +510,12 @@ class MyEnergiHost:
         if res:
             print(res)
 
-    def _set_boost(self, zid, slot, bdd=None):
+    def set_boost(self, zid, slot, bsh=0, bsm=0, bdh=0, bdm=0, bdd=None):
 
         # cgi-boost-time-Z???-{slot}-{bsh}-{bdh}-{bdd}
         # Slot is one of 11,12,13,14
         # Start time is in 24 hour clock, 15 minute intervals.
         # Duration is hoursminutes and is less than 10 hours.
-        bsh = 0
-        bsm = 0
-        bdh = 0
-        bdm = 0
         if not bdd:
             bdd = '00000000'
         res = self._load(suffix='cgi-boost-time-Z{}-{}-{:02}{}-{}{}-{}'.format(zid,
@@ -539,11 +525,7 @@ class MyEnergiHost:
                                                                                bdh,
                                                                                bdm,
                                                                                bdd))
-        print(res)
         self._show_timed_boost(res, slot=slot)
-
-    def clear_timed_boost(self, zid):
-        self._set_boost(zid, 14, bdd='00000000')
 
     def stop_boost(self, zid):
 
