@@ -66,7 +66,6 @@ def main():
     config = run_zappi.load_config(debug=False)
 
     server_conn = mec.zp.MyEnergiHost(config['username'], config['password'])
-    server_conn.check_connection()
     server_conn.refresh()
 
     # The Zappi V2.

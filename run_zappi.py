@@ -88,7 +88,6 @@ def main():
     server_conn = mec.zp.MyEnergiHost(config['username'],
                                       config['password'],
                                       house_conf)
-    server_conn.check_connection()
 
     try:
         if len(sys.argv) == 2:
