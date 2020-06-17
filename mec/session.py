@@ -182,7 +182,7 @@ class Session():
         percent = int(info.state_of_charge)
         self._base_kwh = (self.capacity * percent / 100) - kwh
         self.log.info('State of charge is reported as %d%%', percent)
-        self.log.info('That is %f kWh', self._base_kwh)
+        self.log.info('That is %.1f kWh', self._base_kwh)
 
     def set_not_leaf(self):
         self.log.debug('Setting car as not Leaf')
