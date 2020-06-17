@@ -58,14 +58,13 @@ class AgileRange():
     
     def duration(self):
         # Return the duration of the range, in minutes.
+        # TODO: write a unit test for this function.
         duration = 0
         hours = self.end.tm_hour - self.start_time.tm_hour
         if hours < 0:
             hours += 24
         duration = hours * 60
         minutes = self.end.tm_min - self.start_time.tm_min
-        if minutes > 0:
-            minutes -= 60
         duration += minutes
         return duration
 

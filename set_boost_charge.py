@@ -9,6 +9,7 @@ import argparse
 import run_zappi
 import mec.zp
 import mec.agile
+import mec.session
 
 def main():
     """Main"""
@@ -17,25 +18,50 @@ def main():
     parser.add_argument('--charge', type=float, help='Number of KwH to charge', default=10)
     parser.add_argument('--rate', type=int, help='Charge rate of car in Watts', default=7200)
     parser.add_argument('--by-hour', type=int, help='Finish by this hour', default=8)
+    parser.add_argument('--target-soc', type=int, help='Charge car to SOC', default=0)
     parser.add_argument('--reset', help='Clear all boost values', action='store_true')
     args = parser.parse_args()
+
+    config = run_zappi.load_config()
+
+    if args.target_soc != 0:
+        sm = mec.session.SessionEngine(config)
+        se = sm.new_session()
+        if not isinstance(se, mec.session.Session):
+            print('Cannot connect to car')
+            return
+        se.check_connected = False
+        se.update(0)
+        while (se._is_leaf is None):
+            # The Leaf API only updates every 20 seconds, so wait a little bit
+            # more than that, and re-sample.
+            time.sleep(21)
+            se.update(0)
+        if not se._is_leaf:
+            print('Could not detect leaf')
+            return
+        percent = se.percent_charge()
+        print('Percent charge is {}'.format(percent))
+        if percent > args.target_soc:
+            print('Car already has enough charge')
+            args.reset = True
+        to_add = se.charge_required_for_soc(args.target_soc)
+        charge_rate = 6600
+    else:
+        # KwH to add
+        to_add = args.charge
+        # Charge rate
+        charge_rate = args.rate
 
     if args.reset:
         print('Will wipe all timers')
     else:
-        print('Will aim to add {}kWh at {:.1f}kW by {}am'.format(args.charge,
-                                                                 args.rate/1000,
+        print('Will aim to add {:2.1f}kWh at {:.1f}kW by {}am'.format(to_add,
+                                                                 charge_rate/1000,
                                                                  args.by_hour))
-    config = run_zappi.load_config()
 
     server_conn = mec.zp.MyEnergiHost(config['username'], config['password'])
     server_conn.refresh()
-
-
-    # KwH to add
-    to_add = args.charge
-    # Charge rate
-    charge_rate = args.rate
 
     # Now work out how long is needed to charge.
     # Agile charge rates are per 30 minutes, but Zappi
