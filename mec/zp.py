@@ -525,6 +525,9 @@ class MyEnergiHost:
                                                                                bdh,
                                                                                bdm,
                                                                                bdd))
+        if 'status' in res and res['status'] != 0:
+            log.info('Error code is %s', E_CODES[-res['status']])
+            return
         self._show_timed_boost(res, slot=slot)
 
     def stop_boost(self, zid):

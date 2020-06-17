@@ -3,6 +3,7 @@
 from functools import total_ordering
 
 import urllib.request
+import logging
 import json
 import time
 
@@ -14,6 +15,8 @@ PRODUCT_CODE='AGILE-18-02-21'
 REGION='H'
 TARRIF_CODE='E-1R-{}-{}'.format(PRODUCT_CODE, REGION)
 TARRIF_URL='{}/v1/products/{}/electricity-tariffs/{}/standard-unit-rates'.format(BASE_URL, PRODUCT_CODE, TARRIF_CODE)
+
+log = logging.getLogger('agile')
 
 @total_ordering
 class AgileSlot ():
@@ -160,6 +163,7 @@ def pick_slots(end_hour, count, windows):
     # Pick a number of Time slots.
     # count is the number of time slots that are required
     # windows is how many boost settings there are.
+    log.debug('Looking for %d slots by %d in %d windows', count, end_hour, windows)
     slots = get_slots_until_time(end_hour)
 
     # This is fairly simple, and could be persuaded to fail by
@@ -173,10 +177,12 @@ def pick_slots(end_hour, count, windows):
     for slot in slots:
         if not tw.try_add(slot):
             continue
+        log.debug('Added %s', slot)
         added += 1
         if added == count:
             break
-    
+    for slot in tw.ranges:
+        log.debug('slot is %s', slot)
     return tw
 
 if __name__ == '__main__':

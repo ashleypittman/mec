@@ -71,7 +71,7 @@ def main():
     # unlikely to cost much extra.
     time_needed = to_add/(charge_rate/1000)
     sessions_needed = time_needed * 2
-    sn = int(sessions_needed + 0.5)
+    sn = int(sessions_needed) + 1
     slots = mec.agile.pick_slots(args.by_hour, sn, 4)
 
     for zappi in server_conn.state.zappi_list():
