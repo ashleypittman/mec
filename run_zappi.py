@@ -321,6 +321,9 @@ class LoopFns():
             devices.append('iBoost')
         devices.extend(sockets)
 
+        if 'iBoost' not in state._values:
+            devices.remove('iBoost')
+
         self.log.debug(state._values)
         self.log.debug('Available power is %d', available_power)
         self.log.debug('Auto eco is %s', self.auto_eco)
@@ -344,7 +347,7 @@ class LoopFns():
                 # adjustment is needed, however if the iBoost is not using any
                 # power then allow 250w for the charge rate to increase as
                 # over time this should turn off any sockets preventing this.
-                if zappi.sno in self.auto_eco:
+                if zappi.sno in self.auto_eco and 'iBoost' in state._values:
                     # TODO: This value needs checking.
                     if (available_power + state._values['iBoost'] + zappi.charge_rate) < 1500:
                         self.log.info('Setting Zappi to eco+ for %s %d %d %d', zappi.sno, available_power, state._values['iBoost'], zappi.charge_rate)

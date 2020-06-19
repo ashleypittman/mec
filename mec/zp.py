@@ -330,8 +330,16 @@ class MyEnergi:
 
         rep = ReportCapture()
 
-        house_use = self._values['Generation'] + self._values['Grid'] \
-                - self._values['iBoost'] - self._values['Heating']
+        house_use = self._values['Grid']
+
+        if 'Generation' in self._values:
+            house_use += self._values['Generation']
+
+        try:
+            house_use -= self._values['iBoost']
+            house_use -= self._values['Heating']
+        except KeyError:
+            pass
 
         for zappi in self.zappi_list():
             zappi.report(rep)
@@ -357,9 +365,11 @@ class MyEnergi:
             rep.log('Sockets are using {}'.format(power_format(sockets_total)))
         #(iboost_watts, iboost_amps) = self._values('iBoost')
         #rep.log('iBoost is using {} ({:.1f} amps)'.format(power_format(iboost_watts), iboost_amps))
-        iboost_watts = self._values['iBoost']
-        rep.log('iBoost is using {}'.format(power_format(iboost_watts)))
-        rep.log('Solar is generating {}'.format(power_format(self._values['Generation'])))
+        if 'iBoost' in self._values:
+            iboost_watts = self._values['iBoost']
+            rep.log('iBoost is using {}'.format(power_format(iboost_watts)))
+        if 'Generation' in self._values:
+            rep.log('Solar is generating {}'.format(power_format(self._values['Generation'])))
         grid = self._values['Grid']
         if grid > 0:
             rep.log('Importing {}'.format(power_format(grid)))
