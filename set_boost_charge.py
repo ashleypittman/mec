@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--by-hour', type=int, help='Finish by this hour', default=8)
     parser.add_argument('--target-soc', type=int, help='Charge car to SOC', default=0)
     parser.add_argument('--reset', help='Clear all boost values', action='store_true')
+    parser.add_argument('--dry-run', help='Show would would be set, but do not set it', action='store_true')
     args = parser.parse_args()
 
     config = run_zappi.load_config()
@@ -60,8 +61,6 @@ def main():
                                                                  charge_rate/1000,
                                                                  args.by_hour))
 
-    server_conn = mec.zp.MyEnergiHost(config['username'], config['password'])
-    server_conn.refresh()
 
     # Now work out how long is needed to charge.
     # Agile charge rates are per 30 minutes, but Zappi
@@ -73,6 +72,14 @@ def main():
     sessions_needed = time_needed * 2
     sn = int(sessions_needed) + 1
     slots = mec.agile.pick_slots(args.by_hour, sn, 4)
+
+    if args.dry_run:
+        for slot in slots.ranges:
+            print('Would charge for {}'.format(slot))
+        return
+
+    server_conn = mec.zp.MyEnergiHost(config['username'], config['password'])
+    server_conn.refresh()
 
     for zappi in server_conn.state.zappi_list():
         print('Zappi is currently in mode {}'.format(zappi.mode))
