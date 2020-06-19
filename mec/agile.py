@@ -3,6 +3,7 @@
 from functools import total_ordering
 
 import urllib.request
+import logging
 import json
 import time
 
@@ -14,6 +15,8 @@ PRODUCT_CODE='AGILE-18-02-21'
 REGION='H'
 TARRIF_CODE='E-1R-{}-{}'.format(PRODUCT_CODE, REGION)
 TARRIF_URL='{}/v1/products/{}/electricity-tariffs/{}/standard-unit-rates'.format(BASE_URL, PRODUCT_CODE, TARRIF_CODE)
+
+log = logging.getLogger('agile')
 
 @total_ordering
 class AgileSlot ():
@@ -58,14 +61,13 @@ class AgileRange():
     
     def duration(self):
         # Return the duration of the range, in minutes.
+        # TODO: write a unit test for this function.
         duration = 0
         hours = self.end.tm_hour - self.start_time.tm_hour
         if hours < 0:
             hours += 24
         duration = hours * 60
         minutes = self.end.tm_min - self.start_time.tm_min
-        if minutes > 0:
-            minutes -= 60
         duration += minutes
         return duration
 
@@ -161,6 +163,7 @@ def pick_slots(end_hour, count, windows):
     # Pick a number of Time slots.
     # count is the number of time slots that are required
     # windows is how many boost settings there are.
+    log.debug('Looking for %d slots by %d in %d windows', count, end_hour, windows)
     slots = get_slots_until_time(end_hour)
 
     # This is fairly simple, and could be persuaded to fail by
@@ -174,10 +177,12 @@ def pick_slots(end_hour, count, windows):
     for slot in slots:
         if not tw.try_add(slot):
             continue
+        log.debug('Added %s', slot)
         added += 1
         if added == count:
             break
-    
+    for slot in tw.ranges:
+        log.debug('slot is %s', slot)
     return tw
 
 if __name__ == '__main__':

@@ -102,7 +102,7 @@ class Session():
     high_capacity = 80
 
     def __init__(self, conf, py):
-        self.log.info('Starting new session')
+        self.log.debug('Starting new session')
         self._is_leaf = None
         if 'leaf' not in conf:
             return
@@ -114,6 +114,7 @@ class Session():
         self._py = py.Session(leaf_conf['username'], leaf_conf['password'], leaf_conf['region'])
         self._py_import = py
         self._get_leaf()
+        self.check_connected = True
 
     def _get_leaf(self):
         if self._leaf:
@@ -125,12 +126,13 @@ class Session():
         return self._leaf
 
     def __del__(self):
-        self.log.info('Closing session')
+        self.log.debug('Closing session')
         if not self._is_leaf:
             return
         if not self._base_kwh and self._soc_kwh:
             return
-        self.log.info('Charge went from %f to %f', self._base_kwh, self._soc_kwh)
+        if self.check_connected:
+            self.log.info('Charge went from %f to %f', self._base_kwh, self._soc_kwh)
 
     def _fetch_latest(self, kwh):
         leaf = self._get_leaf()
@@ -158,23 +160,29 @@ class Session():
         age = time.mktime(self._start_time) - time.mktime(server_time)
         if info.is_connected and not info.is_connected_to_quick_charger:
             age -= 60
+        if not self.check_connected:
+            # If the session is not checking the car is charging then it's
+            # just being used to check SOC to know how much to add, so
+            # accept any value that's less than ten minutes old.
+            age -= (60*10)
         if age > 0:
             self.log.info('Data is %d seconds too old', age)
             return
 
-        if not info.is_connected:
-            self._is_leaf = False
-            self.log.info('Leaf is not charging')
-            return
-        if info.is_connected_to_quick_charger:
-            self._is_leaf = False
-            self.log.info('Leaf is quick charging, not starting session')
-            return
+        if self.check_connected:
+            if not info.is_connected:
+                self._is_leaf = False
+                self.log.info('Leaf is not charging')
+                return
+            if info.is_connected_to_quick_charger:
+                self._is_leaf = False
+                self.log.info('Leaf is quick charging, not starting session')
+                return
         self._is_leaf = True
         percent = int(info.state_of_charge)
         self._base_kwh = (self.capacity * percent / 100) - kwh
         self.log.info('State of charge is reported as %d%%', percent)
-        self.log.info('That is %f kWh', self._base_kwh)
+        self.log.info('That is %.1f kWh', self._base_kwh)
 
     def set_not_leaf(self):
         self.log.debug('Setting car as not Leaf')
@@ -183,6 +191,11 @@ class Session():
     def percent_charge(self):
         return (self._soc_kwh / self.capacity) * 100
 
+    def charge_required_for_soc(self, target_soc):
+        """Return the kWh required to hit target_soc %"""
+        to_add = target_soc - self.percent_charge()
+        return self.capacity * (to_add / 100)
+
     def update(self, kwh):
         """Refresh car data"""
         if self._is_leaf is None:
@@ -190,10 +203,11 @@ class Session():
         if not self._is_leaf:
             return
 
-        self.log.info('Total charge added %.2f', kwh)
         self._soc_kwh = self._base_kwh + kwh
-        self.log.info('Total charge held %.2f', self._soc_kwh)
-        self.log.info('SOC percentage %.0f', self.percent_charge())
+        if self.check_connected:
+            self.log.info('Total charge added %.2f', kwh)
+            self.log.info('Total charge held %.2f', self._soc_kwh)
+            self.log.info('SOC percentage %.0f', self.percent_charge())
 
     def should_health_charge(self):
         """Returns true if car should charge because of low battery"""
