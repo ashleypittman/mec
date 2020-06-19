@@ -281,8 +281,9 @@ class MyEnergi:
                 self._values[key] = value
                 self._value_time[key] = device.time
         if check:
-            self._check_zappi_value(self._zappis[0].generation, 'Generation')
-            self._check_zappi_value(self._zappis[0].grid, 'Grid')
+            for zappi in self._zappis:
+                self._check_zappi_value(zappi.generation, 'Generation')
+                self._check_zappi_value(zappi.grid, 'Grid')
 
     def zappi_list(self, priority_order=False):
         # Return a constant-order Zappi list.
@@ -294,11 +295,14 @@ class MyEnergi:
 
     def _check_zappi_value(self, val, vname):
 
-        zappi = self._zappis[0]
-        if self._harvis[0].data_age > 120:
-            log.warning('Harvi data is old')
+        for harvi in self._harvis:
+            if harvi.data_age > 120:
+                log.warning('Harvi data is old')
+                return
+        try:
+            val2 = self._values[vname]
+        except KeyError:
             return
-        val2 = self._values[vname]
         if val != val2:
             self._values[vname] = int((val + val2)/2)
             diff = abs(val - val2)
