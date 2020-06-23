@@ -264,16 +264,6 @@ class MyEnergi:
                     if device_data:
                         log.info('Extra data for %s:%s', e, device_data)
 
-        # Hack alert - check for zero voltage.
-        voltage = 0
-        for device in self._zappis:
-            if device.voltage != 0:
-                voltage = device.voltage
-        for device in self._zappis:
-            if device.voltage == 0:
-                log.debug('Setting Voltage to avoid bug')
-                device.voltage = voltage
-
         for device in self._zappis + self._harvis:
             for (key, value) in device._values.items():
                 if key == 'Zappi':
