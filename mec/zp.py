@@ -146,8 +146,8 @@ class MyEnergiDevice:
         # is not known, so reply None for the amps.
         return (self._values[key], None)
 
-class Zappi(MyEnergiDevice):
-    """A Zappi class"""
+class MyEnergiDiverter(MyEnergiDevice):
+    """A Myenergi diverter device"""
 
     def __init__(self, data, hc):
         super().__init__(data, hc)
@@ -157,22 +157,36 @@ class Zappi(MyEnergiDevice):
         self.grid = self._glimpse_safe(data, 'grd')
         self.generation = self._glimpse_safe(data, 'gen')
         self.phase_count = self._glimpse(data, 'pha')
-        self.min_green_level = self._glimpse(data, 'mgl')
         self.priority = self._glimpse(data, 'pri')
+
+        # Daylight savings and Time Zone.
+        self.dst = self._glimpse_safe(data, 'dst')
+        self.tz = self._glimpse_safe(data, 'tz')
+
+        self.cmt = self._glimpse_safe(data, 'cmt')
+        if self.cmt != 254:
+            log.debug('cmt is %d', self.cmt)
+
+class Eddi(MyEnergiDiverter):
+    """A Eddi class"""
+
+    def __init__(self, data, hc):
+        super().__init__(data, hc)
+
+class Zappi(MyEnergiDiverter):
+    """A Zappi class"""
+
+    def __init__(self, data, hc):
+        super().__init__(data, hc)
+        self.min_green_level = self._glimpse(data, 'mgl')
 
         self._glimpse_safe(data, 'ectt4')
         self._glimpse_safe(data, 'ectt5')
         self._glimpse_safe(data, 'ectt6')
 
-        # Daylight savings.
-        self._glimpse_safe(data, 'dst')
-
         self.mode = MODES[self._glimpse_safe(data, 'zmo')]
         self.status = STATUSES[self._glimpse_safe(data, 'sta')]
         self.pstatus = PSTATUSES[self._glimpse(data, 'pst')]
-        self.cmt = self._glimpse_safe(data, 'cmt')
-        if self.cmt != 254:
-            log.debug('cmt is %d', self.cmt)
         self.charge_rate = self._glimpse_safe(data, 'div')
         self._values['Zappi'] = self.charge_rate
         self.charge_added = self._glimpse_safe(data, 'che')
@@ -245,6 +259,7 @@ class MyEnergi:
         self._value_time = {}
         self._zid = None
         self._zappis = []
+        self._eddis = []
         self._harvis = []
         self._house_data = house_data
 
@@ -259,31 +274,41 @@ class MyEnergi:
                     device_data = dict(device_data)
                     if e == 'zappi':
                         self._zappis.append(Zappi(device_data, house_data))
+                    elif e == 'eddi':
+                        self._eddis.append(Eddi(device_data, house_data))
                     elif e == 'harvi':
                         self._harvis.append(Harvi(device_data, house_data))
                     if device_data:
                         log.info('Extra data for %s:%s', e, device_data)
 
-        for device in self._zappis + self._harvis:
+        for device in self._zappis + self._eddis + self._harvis:
             for (key, value) in device._values.items():
                 if key == 'Zappi':
                     continue
                 self._values[key] = value
                 self._value_time[key] = device.time
         if check:
-            for zappi in self._zappis:
-                self._check_zappi_value(zappi.generation, 'Generation')
-                self._check_zappi_value(zappi.grid, 'Grid')
+            for device in self._zappis + self._eddis:
+                self._check_device_value(device.generation, 'Generation')
+                self._check_device_value(device.grid, 'Grid')
 
     def zappi_list(self, priority_order=False):
         # Return a constant-order Zappi list.
 
         if priority_order:
-            return sorted(self._zappis, key=lambda z: z.priority)
+            return sorted(self._zappis, key=lambda d: d.priority)
         else:
-            return sorted(self._zappis, key=lambda z: z.sno)
+            return sorted(self._zappis, key=lambda d: d.sno)
 
-    def _check_zappi_value(self, val, vname):
+    def eddi_list(self, priority_order=False):
+        # Return a constant-order Eddi list.
+
+        if priority_order:
+            return sorted(self._eddis, key=lambda d: d.priority)
+        else:
+            return sorted(self._eddis, key=lambda d: d.sno)
+
+    def _check_device_value(self, val, vname):
 
         for harvi in self._harvis:
             if harvi.data_age > 120:
