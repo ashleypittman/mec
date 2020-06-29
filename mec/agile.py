@@ -11,10 +11,6 @@ import time
 
 BASE_URL='https://api.octopus.energy'
 PRODUCT_CODE='AGILE-18-02-21'
-# TODO: This should be a config item.
-REGION='H'
-TARRIF_CODE='E-1R-{}-{}'.format(PRODUCT_CODE, REGION)
-TARRIF_URL='{}/v1/products/{}/electricity-tariffs/{}/standard-unit-rates'.format(BASE_URL, PRODUCT_CODE, TARRIF_CODE)
 
 log = logging.getLogger('agile')
 
@@ -23,11 +19,15 @@ class AgileSlot ():
     # A single 30 minute agile timeslot.
 
     def __init__(self, raw):
-        self.price = raw['value_exc_vat']
-        st = raw['valid_from'][:-3] + '+0100'
-        self.start_time = time.strptime(st, '%Y-%m-%dT%H:%M:%z')
-        st = raw['valid_to'][:-3] + '+0100'
-        self.end = time.strptime(st, '%Y-%m-%dT%H:%M:%z')
+        self.price = raw['value_inc_vat']
+        # Agile data is published in GMT, record it as such with correct
+        # timezone data, then covert it to localtime from here on in.
+        st = raw['valid_from'][:-3] + 'GMT'
+        self.start_time = time.strptime(st, '%Y-%m-%dT%H:%M:%Z')
+        self.start_time = time.localtime(time.mktime(self.start_time))
+        st = raw['valid_to'][:-3] + 'GMT'
+        self.end = time.strptime(st, '%Y-%m-%dT%H:%M:%Z')
+        self.end = time.localtime(time.mktime(self.end))
 
     def __lt__(self, a):
         return self.start_time < a
@@ -83,7 +83,7 @@ class AgileRange():
                                                         end.tm_min,
                                                         self.duration())
 
-def get_current_data():
+def get_current_data(conf):
     # Return an array of all future timeslots, including the
     # current one.
 
@@ -91,7 +91,15 @@ def get_current_data():
 
     all_future_data = []
 
-    data_url = TARRIF_URL
+    try:
+        region = conf['agile']['region']
+    except KeyError:
+        region = 'F'
+
+    tarrif_code='E-1R-{}-{}'.format(PRODUCT_CODE, region)
+    data_url='{}/v1/products/{}/electricity-tariffs/{}/standard-unit-rates'.format(BASE_URL,
+                                                                                   PRODUCT_CODE,
+                                                                                   tarrif_code)
 
     done = False
     while not done:
@@ -107,14 +115,14 @@ def get_current_data():
                 break
     return list(reversed(all_future_data))
 
-def get_slots_until_time(hour):
+def get_slots_until_time(conf, hour):
     # Return all timeslots from now, until the specified
     # hour.
 
     # This function is not without issues, it's intended to
     # be called in the evening to setup overnight charging,
     # so assumes that 'hour' has already passed for today.
-    data = get_current_data()
+    data = get_current_data(conf)
 
     past_midnight = False
     slots = []
@@ -159,12 +167,12 @@ class TimeWindows():
                 new_ranges.append(rng)
         self.ranges = new_ranges
 
-def pick_slots(end_hour, count, windows):
+def pick_slots(conf, end_hour, count, windows):
     # Pick a number of Time slots.
     # count is the number of time slots that are required
     # windows is how many boost settings there are.
     log.debug('Looking for %d slots by %d in %d windows', count, end_hour, windows)
-    slots = get_slots_until_time(end_hour)
+    slots = get_slots_until_time(conf, end_hour)
 
     # This is fairly simple, and could be persuaded to fail by
     # a carefully constructed set of inputs, simply walk the
@@ -187,4 +195,4 @@ def pick_slots(end_hour, count, windows):
 
 if __name__ == '__main__':
     # Before ten AM pick seven slots in four windows.
-    pick_slots(10, 7, 4)
+    pick_slots(None, 10, 7, 4)
