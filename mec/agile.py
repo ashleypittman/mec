@@ -45,7 +45,7 @@ class AgileRange():
         self.end = slot.end
 
     def add(self, slot):
-        # Try to expand the current range to add a new timeslow,
+        # Try to expand the current range to add a new timeslot,
         # return False if the slot isn't adjacent to the range.
         if self.end == slot.start_time:
             self.slots.append(slot)
@@ -167,6 +167,11 @@ class TimeWindows():
                 new_ranges.append(rng)
         self.ranges = new_ranges
 
+    def sort_by_time(self):
+        """Re-order time ranges to be sorted by time"""
+
+        self.ranges = sorted(self.ranges, key=lambda s: s.start_time)
+
 def pick_slots(conf, end_hour, count, windows):
     # Pick a number of Time slots.
     # count is the number of time slots that are required
@@ -189,6 +194,7 @@ def pick_slots(conf, end_hour, count, windows):
         added += 1
         if added == count:
             break
+    tw.sort_by_time()
     for slot in tw.ranges:
         log.debug('slot is %s', slot)
     return tw
