@@ -289,6 +289,8 @@ class MyEnergi:
                 self._value_time[key] = device.time
         if check:
             for device in self._zappis + self._eddis:
+                if device.voltage == 0:
+                    raise DataBogus
                 self._check_device_value(device.generation, 'Generation')
                 self._check_device_value(device.grid, 'Grid')
 
