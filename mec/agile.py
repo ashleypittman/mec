@@ -43,6 +43,9 @@ class AgileRange():
         self.slots = [slot]
         self.start_time = slot.start_time
         self.end = slot.end
+        # Total price for all slots.
+        self.price = slot.price
+        self.slot_count = 1
 
     def add(self, slot):
         # Try to expand the current range to add a new timeslot,
@@ -50,11 +53,15 @@ class AgileRange():
         if self.end == slot.start_time:
             self.slots.append(slot)
             self.end = slot.end
+            self.slot_count += 1
+            self.price += slot.price
             return True
 
         if self.start_time == slot.end:
             self.slots.append(slot)
             self.start_time = slot.start_time
+            self.slot_count += 1
+            self.price += slot.price
             return True
 
         return False
@@ -69,6 +76,7 @@ class AgileRange():
         duration = hours * 60
         minutes = self.end.tm_min - self.start_time.tm_min
         duration += minutes
+        assert duration == self.slot_count * 30
         return duration
 
     def __repr__(self):
@@ -171,6 +179,16 @@ class TimeWindows():
         """Re-order time ranges to be sorted by time"""
 
         self.ranges = sorted(self.ranges, key=lambda s: s.start_time)
+
+    def get_price(self):
+        """Return the unit cost of electricity, not accounting
+        for rate.  Multiply by charge rate to get cost.
+        """
+
+        price = 0
+        for slot in self.ranges:
+            price += slot.price * slot.slot_count
+        return price
 
 def pick_slots(conf, end_hour, count, windows):
     # Pick a number of Time slots.

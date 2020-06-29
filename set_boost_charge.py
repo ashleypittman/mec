@@ -76,6 +76,9 @@ def main():
     if args.dry_run:
         for slot in slots.ranges:
             print('Would charge for {}'.format(slot))
+        price = slots.get_price()
+        total_price = charge_rate / 1000 * price
+        print('Charge would cost {:.1f} pence'.format(total_price))
         return
 
     server_conn = mec.zp.MyEnergiHost(config['username'], config['password'])
@@ -96,6 +99,9 @@ def main():
                                       bsm=slot.start_time.tm_min,
                                       bdh=duration // 60,
                                       bdm=duration % 60)
+            price = slots.get_price()
+            total_price = charge_rate / 1000 * price
+            print('Estimaged charge cost {:.1f} pence'.format(total_price))
 
         # Now clear any other boost timers.
         for zslot in SIDS:
