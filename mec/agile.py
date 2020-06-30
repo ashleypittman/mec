@@ -28,6 +28,7 @@ class AgileSlot ():
         st = raw['valid_to'][:-3] + 'GMT'
         self.end = time.strptime(st, '%Y-%m-%dT%H:%M:%Z')
         self.end = time.localtime(time.mktime(self.end))
+        self.slot_count = 1
 
     def __lt__(self, a):
         return self.start_time < a
@@ -53,14 +54,14 @@ class AgileRange():
         if self.end == slot.start_time:
             self.slots.append(slot)
             self.end = slot.end
-            self.slot_count += 1
+            self.slot_count += slot.slot_count
             self.price += slot.price
             return True
 
         if self.start_time == slot.end:
             self.slots.append(slot)
             self.start_time = slot.start_time
-            self.slot_count += 1
+            self.slot_count += slot.slot_count
             self.price += slot.price
             return True
 
@@ -183,11 +184,16 @@ class TimeWindows():
     def get_price(self):
         """Return the unit cost of electricity, not accounting
         for rate.  Multiply by charge rate to get cost.
+
+        slot.price is the sum of all slot prices for this range,
+        so just use it, duration is already factored in, however
+        each slot is only 30 minutes long so reduce the overall
+        price by 2
         """
 
         price = 0
         for slot in self.ranges:
-            price += slot.price * slot.slot_count
+            price += slot.price / 2
         return price
 
 def pick_slots(conf, end_hour, count, windows):
