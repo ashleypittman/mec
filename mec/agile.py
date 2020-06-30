@@ -207,17 +207,26 @@ def pick_slots(conf, end_hour, count, windows):
     # a carefully constructed set of inputs, simply walk the
     # list of time slots by preference trying each one.
     # Due to a limited number of windows it may not be optional.
-    # Ideally, once windows are merged then any previously
-    # rejected timeslots would be reconsidered.
+    # Continue in a loop until there are no more slots, or
+    # enough are used.
+    # It would probaby be better to restart from the start of
+    # the initial list after every addition, in order to better
+    # benefit from coalescing.
     tw = TimeWindows(windows)
     added = 0
-    for slot in slots:
-        if not tw.try_add(slot):
-            continue
-        log.debug('Added %s', slot)
-        added += 1
-        if added == count:
-            break
+    while slots and added != count:
+        spare_slots = []
+        for slot in slots:
+            if not tw.try_add(slot):
+                spare_slots.append(slot)
+                continue
+            log.debug('Added %s', slot)
+            added += 1
+            if added == count:
+                break
+        slots = spare_slots
+    if added != count:
+        log.info('Wanted %d slots but only found %d', count, added)
     tw.sort_by_time()
     for slot in tw.ranges:
         log.debug('slot is %s', slot)
