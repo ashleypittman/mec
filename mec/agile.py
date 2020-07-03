@@ -215,16 +215,13 @@ def pick_slots(conf, end_hour, count, windows):
     tw = TimeWindows(windows)
     added = 0
     while slots and added != count:
-        spare_slots = []
-        for slot in slots:
-            if not tw.try_add(slot):
-                spare_slots.append(slot)
-                continue
-            log.debug('Added %s', slot)
-            added += 1
-            if added == count:
-                break
-        slots = spare_slots
+       for slot in slots:
+           if tw.try_add(slot):
+               log.debug('Added %s', slot)
+               slots.remove(slot)
+               added += 1
+               break
+
     if added != count:
         log.info('Wanted %d slots but only found %d', count, added)
     tw.sort_by_time()
