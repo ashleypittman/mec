@@ -94,7 +94,7 @@ def main():
 
             for slot in slots.ranges:
                 duration = slot.duration()
-                server_conn.set_boost(zappi.sno, SIDS.pop(), bdd='11111111',
+                server_conn.set_boost(zappi.sno, SIDS.pop(), bdd='01111111',
                                       bsh=slot.start_time.tm_hour,
                                       bsm=slot.start_time.tm_min,
                                       bdh=duration // 60,
