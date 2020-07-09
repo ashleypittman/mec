@@ -54,6 +54,12 @@ class SessionManager():
             return False
         return self.session.should_stop_charge()
 
+    def request_update(self):
+        if not self.session:
+            return
+        if hasattr(self.session, 'request_update'):
+            self.session.request_update()
+
 class SessionEngine():
     """Metaclass for creating the right kind of session"""
 
@@ -96,7 +102,9 @@ class Session():
     """Session counter"""
 
     log = logging.getLogger(__name__)
-    capacity = 24
+    # Estimate of battery capacity, in terms of KwH charge to
+    # go from 0-100%.  Used for SOC calculations.
+    capacity = 26
     # Percentage
     low_capacity = 20
     high_capacity = 80
@@ -115,6 +123,8 @@ class Session():
         self._py_import = py
         self._get_leaf()
         self.check_connected = True
+        self._refresh = False
+        self._refresh_time = None
 
     def _get_leaf(self):
         if self._leaf:
@@ -134,7 +144,7 @@ class Session():
         if self.check_connected:
             self.log.info('Charge went from %f to %f', self._base_kwh, self._soc_kwh)
 
-    def _fetch_latest(self, kwh):
+    def _fetch_latest(self, kwh, start_time):
         leaf = self._get_leaf()
         if not leaf:
             return
@@ -157,7 +167,7 @@ class Session():
             return
         remote_time = info.answer['BatteryStatusRecords']['NotificationDateAndTime']
         server_time = time.strptime('{} GMT'.format(remote_time), '%Y/%m/%d %H:%M %Z')
-        age = time.mktime(self._start_time) - time.mktime(server_time)
+        age = time.mktime(start_time) - time.mktime(server_time)
         if info.is_connected and not info.is_connected_to_quick_charger:
             age -= 60
         if not self.check_connected:
@@ -180,9 +190,44 @@ class Session():
                 return
         self._is_leaf = True
         percent = int(info.state_of_charge)
-        self._base_kwh = (self.capacity * percent / 100) - kwh
+        if not self._base_kwh:
+            self._base_kwh = (self.capacity * percent / 100) - kwh
+            self._initial_percent = percent
         self.log.info('State of charge is reported as %d%%', percent)
         self.log.info('That is %.1f kWh', self._base_kwh)
+        return percent
+
+    def request_update(self):
+        """Mark the session as needing an update"""
+
+        self._refresh = True
+        self._refresh_time = time.gmtime()
+
+    def _do_refresh(self):
+        """Perform a refresh against Nissan servers"""
+
+        new_percent = self._fetch_latest(0, self._refresh_time)
+        if not new_percent:
+            return
+
+        self._refresh = False
+
+        self.log.info('State of charge update %d%% %d%%',
+                      self.percent_charge(),
+                      new_percent)
+        # Calculate the observed capacity
+        added_percent = new_percent - self._initial_percent
+        added_kwh = self._soc_kwh - self._base_kwh
+        self.log.info('Percent %d %d %d', added_percent, new_percent, self._initial_percent)
+
+        if added_percent == 0:
+            return
+
+        new_cap = added_kwh * (100 / added_percent)
+        self.log.info('Capacity change from %.1f to %.1f after %.1f kwh',
+                      self.capacity,
+                      new_cap,
+                      added_kwh)
 
     def set_not_leaf(self):
         self.log.debug('Setting car as not Leaf')
@@ -199,11 +244,15 @@ class Session():
     def update(self, kwh):
         """Refresh car data"""
         if self._is_leaf is None:
-            self._fetch_latest(kwh)
+            self._fetch_latest(kwh, self._start_time)
         if not self._is_leaf:
             return
 
         self._soc_kwh = self._base_kwh + kwh
+
+        if self._refresh:
+            self._do_refresh()
+
         if self.check_connected:
             self.log.info('Total charge added %.2f', kwh)
             self.log.info('Total charge held %.2f', self._soc_kwh)
