@@ -304,7 +304,7 @@ class LoopFns():
             else:
                 sockets.append(socket)
         state = self.server_conn.state
-        available_power = state._values['Generation']
+        available_power = state._values.get('Generation', 0)
         available_power -= state._values['House']
         car_first = False
         can_auto_eco = False
