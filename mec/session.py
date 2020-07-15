@@ -116,6 +116,8 @@ class CommonSession():
 
     def __init__(self, conf):
         self.log.debug('Starting new session')
+        if 'capacity' in conf:
+            self.capacity = conf['capacity']
         self.check_connected = True
         self._soc_kwh = None
         self._refresh = False
@@ -161,7 +163,7 @@ class TeslaSession(CommonSession):
     charge_rate = 7200
 
     def __init__(self, conf, mt):
-        super().__init__(conf)
+        super().__init__(conf['tesla'])
         tesla_conf = conf['tesla']
         try:
             self._mt = mt.connect(tesla_conf['username'], tesla_conf['password'])
@@ -225,7 +227,7 @@ class LeafSession(CommonSession):
     charge_rate = 6600
 
     def __init__(self, conf, py):
-        super().__init__(conf)
+        super().__init__(conf['leaf'])
         leaf_conf = conf['leaf']
         self._start_time = time.gmtime()
         self._base_kwh = None
