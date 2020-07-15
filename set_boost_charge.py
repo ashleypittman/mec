@@ -28,18 +28,18 @@ def main():
     if args.target_soc != 0:
         sm = mec.session.SessionEngine(config)
         se = sm.new_session()
-        if not isinstance(se, mec.session.Session):
+        if not isinstance(se, mec.session.CommonSession):
             print('Cannot connect to car')
             return
         se.check_connected = False
         se.update(0)
-        while (se._is_leaf is None):
+        while (se._is_valid is None):
             # The Leaf API only updates every 20 seconds, so wait a little bit
             # more than that, and re-sample.
             time.sleep(21)
             se.update(0)
-        if not se._is_leaf:
-            print('Could not detect leaf')
+        if not se._is_valid:
+            print('Could not detect car')
             return
         percent = se.percent_charge()
         print('Percent charge is {}'.format(percent))
@@ -47,7 +47,7 @@ def main():
             print('Car already has enough charge')
             args.reset = True
         to_add = se.charge_required_for_soc(args.target_soc)
-        charge_rate = 6600
+        charge_rate = se.charge_rate
     else:
         # KwH to add
         to_add = args.charge

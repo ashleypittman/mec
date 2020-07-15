@@ -36,10 +36,10 @@ class ePaper():
         for zappi in state.zappi_list():
             if zappi.car_connected():
                 car = 'Unknown'
-                if sessions[zappi.sno]['se'].session._is_leaf:
+                if sessions[zappi.sno]['se'].session._is_valid:
                     session = sessions[zappi.sno]['se'].session
                     car = 'Leaf ({:.0f}%)'.format(session.percent_charge())
-                elif sessions[zappi.sno]['se'].session._is_leaf is False:
+                elif sessions[zappi.sno]['se'].session._is_valid is False:
                     car = 'Outlander'
                 if zappi.status == 'Hot':
                     text.append('Fully charged {}kWh {}'.format(zappi.charge_added, car))

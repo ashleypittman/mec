@@ -134,12 +134,6 @@ def show_zappi_data(config, server_conn, sockets):
     for harvi in state._harvis:
         print(harvi.report())
 
-    if False:
-        session_engine = mec.session.SessionEngine(config)
-        session = session_engine.new_session()
-        session.update(2)
-        session = None
-
     for line in get_graph(state, sockets):
         print(line)
     for (key, value, _) in state.get_readings():
@@ -259,7 +253,7 @@ class LoopFns():
 
         have_leaf = False
         for session in self.sessions.values():
-            if session['se'].session and session['se'].session._is_leaf:
+            if session['se'].session and session['se'].session._is_valid:
                 have_leaf = True
         for zappi in state.zappi_list():
             if zappi.sno not in self.sessions:
