@@ -176,7 +176,9 @@ class TeslaSession(CommonSession):
     def _get_soc(self):
         if not self._mt:
             return
-        return self._mt.charge_state()
+        raw = self._mt.charge_state()
+        log.debug(raw)
+        return raw['battery_level']
 
     def _do_refresh(self):
 
