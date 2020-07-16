@@ -177,7 +177,7 @@ class TeslaSession(CommonSession):
         if not self._mt:
             return
         raw = self._mt.charge_state()
-        log.debug(raw)
+        self.log.debug(raw)
         return raw['battery_level']
 
     def _do_refresh(self):
