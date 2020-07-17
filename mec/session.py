@@ -168,7 +168,6 @@ class TeslaSession(CommonSession):
         try:
             self._mt = mt.connect(tesla_conf['username'], tesla_conf['password'])
             self._mt.wake_up()
-            self._is_valid = True
         except KeyError:
             self._mt = None
             self._is_valid = False
@@ -179,6 +178,9 @@ class TeslaSession(CommonSession):
             return
         raw = self._mt.charge_state()
         self.log.debug(raw)
+        if 'error' in raw:
+            return
+        self._is_valid = True
         return raw['response']['battery_level']
 
     def _do_refresh(self):

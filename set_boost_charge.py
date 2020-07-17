@@ -25,10 +25,20 @@ def main():
 
     config = run_zappi.load_config()
 
+    # Set to true if car is to charge to 100%, this allows extra time
+    # for reduced current at high SOC values.
+    extra_time = False
+
     if args.target_soc != 0:
+        if args.target_soc > 100:
+            print('Cannot charge above 100')
+            return
+        if args.target_soc > 95:
+            args.target_soc = 100
         sm = mec.session.SessionEngine(config)
         se = sm.new_session()
         if not isinstance(se, mec.session.CommonSession):
+            print(type(se))
             print('Cannot connect to car')
             return
         se.check_connected = False
@@ -69,6 +79,8 @@ def main():
     # an overestimate each time so is safe, and is
     # unlikely to cost much extra.
     time_needed = to_add/(charge_rate/1000)
+    if extra_time:
+        time_needed += 2
     sessions_needed = time_needed * 2
     sn = int(sessions_needed) + 1
     slots = mec.agile.pick_slots(config, args.by_hour, sn, 4)
