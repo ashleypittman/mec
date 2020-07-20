@@ -206,11 +206,14 @@ class TeslaSession(CommonSession):
 
     def update(self, kwh):
 
-        if not self._is_valid:
+        if self._is_valid is False:
             return
 
         if not self._base_kwh:
-            self._initial_percent = self._get_soc()
+            percent = self._get_soc()
+            if not percent:
+                return
+            self._initial_percent = percent
             self._base_kwh = (self.capacity * self._initial_percent / 100) - kwh
 
         self._soc_kwh = self._base_kwh + kwh
