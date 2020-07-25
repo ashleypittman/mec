@@ -56,11 +56,12 @@ class ePaper():
             else:
                 text.append('No car connected')
         ival = state._values['Grid'] / 1000
-        gval = state._values['Generation'] / 1000
-        if abs(gval) < 0.2:
-            gen = 'No Generation'
-        else:
-            gen = 'Generation {:.1f}'.format(gval)
+        if 'Generation' in state._values:
+            gval = state._values['Generation'] / 1000
+            if abs(gval) < 0.2:
+                gen = 'No Generation'
+            else:
+                gen = 'Generation {:.1f}'.format(gval)
         if abs(ival) < 0.1:
             istate = 'No import/export'
         elif ival >= 0:
@@ -68,14 +69,16 @@ class ePaper():
         else:
             istate = 'Export {:.1f}'.format(-ival)
         grid_today = culm_values['Grid']
-        text.append('{} {}'.format(gen, istate))
+        if 'Generation' in state._values:
+            text.append('{} {}'.format(gen, istate))
         text.append('Days import/export: {:.1f} {:.1f}'.format(grid_today.kwh(), grid_today.nkwh()))
-        iboost_today = culm_values['iBoost']
-        if state._values['iBoost'] < 50:
-            text.append('Water is not heating {:.1f}kWh today'.format(iboost_today.kwh()))
-        else:
-            text.append('Water {:.1f}kw {:.1f}kWh today'.format(state._values['iBoost'] / 1000,
-                                                                         iboost_today.kwh()))
+        if 'iBoost' in culm_values:
+            iboost_today = culm_values['iBoost']
+            if state._values['iBoost'] < 50:
+                text.append('Water is not heating {:.1f}kWh today'.format(iboost_today.kwh()))
+            else:
+                text.append('Water {:.1f}kw {:.1f}kWh today'.format(state._values['iBoost'] / 1000,
+                                                                             iboost_today.kwh()))
         text.append('')
         for socket in sockets:
             if socket.name != 'Dehumidifier':
@@ -88,11 +91,12 @@ class ePaper():
                 text.append('{} is satisfied'.format(socket.name))
             else:
                 text.append('{} {}, {:.1f} today'.format(socket.name, s_state, socket.todays_kwh()))
-        heating_value = state._values['Heating']
-        if abs(heating_value) < 20:
-            text.append('Heating is off')
-        else:
-            text.append('Heating is on')
+        if 'Heating' in state._values:
+            heating_value = state._values['Heating']
+            if abs(heating_value) < 20:
+                text.append('Heating is off')
+            else:
+                text.append('Heating is on')
         self._to_show = text
         log.debug(self._showing)
         log.debug(self._to_show)
