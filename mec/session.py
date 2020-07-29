@@ -161,6 +161,7 @@ class TeslaSession(CommonSession):
 
     capacity = 70
     charge_rate = 7200
+    name = 'Tesla'
 
     def __init__(self, conf, mt):
         super().__init__(conf['tesla'])
@@ -233,6 +234,7 @@ class LeafSession(CommonSession):
     # go from 0-100%.  Used for SOC calculations.
     capacity = 26
     charge_rate = 6600
+    name = 'Leaf'
 
     def __init__(self, conf, py):
         super().__init__(conf['leaf'])

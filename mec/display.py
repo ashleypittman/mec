@@ -38,7 +38,7 @@ class ePaper():
                 car = 'Unknown'
                 if sessions[zappi.sno]['se'].session._is_valid:
                     session = sessions[zappi.sno]['se'].session
-                    car = 'Leaf ({:.0f}%)'.format(session.percent_charge())
+                    car = '{} ({:.0f}%)'.format(session.name, session.percent_charge())
                 elif sessions[zappi.sno]['se'].session._is_valid is False:
                     car = 'Outlander'
                 if zappi.status == 'Hot':
