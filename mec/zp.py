@@ -191,7 +191,7 @@ class Zappi(MyEnergiDiverter):
         self._values['Zappi'] = self.charge_rate
         self.charge_added = self._glimpse_safe(data, 'che')
         self.manual_boost = bool(self._glimpse_safe(data, 'bsm'))
-        self.manual_boost_level = self._glimpse(data, 'tbk')
+        self.manual_boost_level = self._glimpse_safe(data, 'tbk')
         self.smart_boost = bool(self._glimpse_safe(data, 'bss'))
         self.smart_boost_level = self._glimpse_safe(data, 'sbk')
         self.smart_boost_hour = self._glimpse_safe(data, 'sbh')
