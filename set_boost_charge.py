@@ -113,7 +113,7 @@ def main():
                                       bdm=duration % 60)
             price = slots.get_price()
             total_price = charge_rate / 1000 * price
-            print('Estimated charge cost {:.1f} pence'.format(total_price))
+            print('Estimaged charge cost {:.1f} pence'.format(total_price))
 
         # Now clear any other boost timers.
         for zslot in SIDS:
