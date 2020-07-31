@@ -17,7 +17,13 @@ username: <serial number of Hub>
 password: <Password as used in App>
 ```
 
-Additionally, to use the Leaf integrarion the you need the Nissan credentials, as well as the location of a local checkout of https://github.com/filcole/pycarwings2.git
+To use the Jaguar Land Rover integration the you need to pip install jlrpy and set config file with permissions. Config includes a max SOC - set to 100 if you wish to control max SOC from this application (https://github.com/ardevd/jlrpy.git)
+```
+jlr:
+    username: <email@example.com>
+    password: <Password for JLR Incontrol app>
+
+Additionally, to use the Leaf integration the you need the Nissan credentials, as well as the location of a local checkout of https://github.com/filcole/pycarwings2.git
 ```
 leaf:
     username: <email@example.com>
@@ -32,7 +38,7 @@ agile:
     region: H
 ```
 
-Finally, it's possible to apply some manual configuration to the CT clams on individual devices, for example if they are configured as 'Monitor' or 'AC Storage'.  In this way I am able to have mine report figures for my iBoost although it's seen by the Zappi as a AC Battery.
+Finally, it's possible to apply some manual configuration to the CT clamps on individual devices, for example if they are configured as 'Monitor' or 'AC Storage'.  In this way I am able to have mine report figures for my iBoost although it's seen by the Zappi as a AC Battery.
 ```
 house_data:
     <Zaapi serial number>:
