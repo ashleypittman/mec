@@ -17,7 +17,7 @@ username: <serial number of Hub>
 password: <Password as used in App>
 ```
 
-Additionally, to use the Leaf integrarion the you need the Nissan credentials, as well as the location of a local checkout of https://github.com/filcole/pycarwings2.git
+Additionally, to use the Leaf integration the you need the Nissan credentials, as well as the location of a local checkout of https://github.com/filcole/pycarwings2.git
 ```
 leaf:
     username: <email@example.com>
@@ -25,6 +25,12 @@ leaf:
     region: <NE>
 pycarwings_path: </path/to/pycarwings2>
 ```
+
+To use the Jaguar Land Rover integration the you need to pip install jlrpy and set config file with permissions. Config includes a max SOC - set to 100 if you wish to control max SOC from this application (https://github.com/ardevd/jlrpy.git)
+```
+jlr:
+    username: <email@example.com>
+    password: <Password for JLR Incontrol app>
 
 If using the Octopus Agile features it's necessary to set the region
 ```

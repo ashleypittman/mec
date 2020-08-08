@@ -65,6 +65,7 @@ class SessionEngine():
         self._conf = conf
         self._py2 = None
         self._mt = None
+        self._jlr = None
         if 'leaf' in conf:
 
             if 'pycarwings_path' in conf:
@@ -73,8 +74,11 @@ class SessionEngine():
                 self._py2 = __import__('pycarwings2')
             except ModuleNotFoundError:
                 self._py2 = None
-        elif 'tesla' in conf:
+        if 'tesla' in conf:
             self._mt = __import__('myTesla')
+
+        if 'jlr' in conf:
+            self._jlr = __import__('jlrpy')
 
     def new_session(self, have_car=False):
         """Return a new session"""
@@ -87,6 +91,8 @@ class SessionEngine():
                 return NullSession()
         elif self._mt:
             return TeslaSession(self._conf, self._mt)
+        elif self._jlr:
+            return jlrSession(self._conf, self._jlr)
         else:
             return NullSession()
 
@@ -351,3 +357,73 @@ class LeafSession(CommonSession):
             self.log.info('Total charge held %.2f', self._soc_kwh)
             self.log.info('SOC percentage %.0f', self.percent_charge())
 
+class jlrSession(CommonSession):
+    """Session counter"""
+
+    # Estimate of battery capacity, in terms of KwH charge to
+    # go from 0-100%.  Used for SOC calculations.
+    capacity = 85
+    charge_rate = 7800
+    name = 'Jaguar'
+
+    def __init__(self, conf, jlr):
+        super().__init__(conf['jlr'])
+        jlr_conf = conf['jlr']
+
+        self._jlr = jlr.Connection(jlr_conf['username'], jlr_conf['password']).vehicles[0]
+        self._base_kwh = None
+
+
+    def _get_soc(self):
+        if not self._jlr:
+            return
+        raw = self._jlr.get_health_status()
+        self.log.debug(raw)
+        if 'Exception' in raw:
+            return
+        self._is_valid = True
+        current_soc = int(self._jlr.get_status('EV_STATE_OF_CHARGE'))
+        return current_soc
+
+    def _do_refresh(self):
+
+        new_percent = self._get_soc()
+
+        self.log.info('State of charge update %d%% %d%%',
+                      self.percent_charge(),
+                      new_percent)
+        # Calculate the observed capacity
+        added_percent = new_percent - self._initial_percent
+        added_kwh = self._soc_kwh - self._base_kwh
+        self.log.info('Percent %d %d %d', added_percent, new_percent, self._initial_percent)
+
+        if added_percent == 0:
+            return
+
+        new_cap = added_kwh * (100 / added_percent)
+        self.log.info('Capacity change from %.1f to %.1f after %.1f kwh',
+                      self.capacity,
+                      new_cap,
+                      added_kwh)
+
+    def update(self, kwh):
+
+        if self._is_valid is False:
+            return
+
+        if not self._base_kwh:
+            percent = self._get_soc()
+            if not percent:
+                return
+            self._initial_percent = percent
+            self._base_kwh = (self.capacity * self._initial_percent / 100) - kwh
+
+        self._soc_kwh = self._base_kwh + kwh
+
+        if self._refresh:
+            self._do_refresh()
+
+        if self.check_connected:
+            self.log.info('Total charge added %.2f', kwh)
+            self.log.info('Total charge held %.2f', self._soc_kwh)
+            self.log.info('SOC percentage %.0f', self.percent_charge())
