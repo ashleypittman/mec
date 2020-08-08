@@ -542,14 +542,23 @@ class MyEnergiHost:
         if res:
             print(res)
 
-    def set_boost(self, zid, slot, bsh=0, bsm=0, bdh=0, bdm=0, bdd=None):
+    def set_boost(self, zid, slot, bsh=0, bsm=0, bdh=0, bdm=0, bdd=None, dow=None):
 
         # cgi-boost-time-Z???-{slot}-{bsh}-{bdh}-{bdd}
         # Slot is one of 11,12,13,14
         # Start time is in 24 hour clock, 15 minute intervals.
         # Duration is hoursminutes and is less than 10 hours.
-        if not bdd:
+        if dow:
+            bdd = list('00000000')
+            bdd[dow+1] = '1'
+            bdd = ''.join(bdd)
+        elif not bdd:
             bdd = '00000000'
+        if (bdh >= 8):
+            log.info('Max 8 hours per slot')
+            bdh = 8
+            bdm = 0
+
         res = self._load(suffix='cgi-boost-time-Z{}-{}-{:02}{}-{}{}-{}'.format(zid,
                                                                                slot,
                                                                                bsh,

@@ -87,10 +87,10 @@ class AgileRange():
         st = self.start_time
         end = self.end
         return '{:02d}:{:02d} {:02d}:{:02d} {}'.format(st.tm_hour,
-                                                        st.tm_min,
-                                                        end.tm_hour,
-                                                        end.tm_min,
-                                                        self.duration())
+                                                       st.tm_min,
+                                                       end.tm_hour,
+                                                       end.tm_min,
+                                                       self.duration())
 
 def get_current_data(conf):
     # Return an array of all future timeslots, including the

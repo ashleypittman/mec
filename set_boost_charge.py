@@ -38,7 +38,6 @@ def main():
         sm = mec.session.SessionEngine(config)
         se = sm.new_session()
         if not isinstance(se, mec.session.CommonSession):
-            print(type(se))
             print('Cannot connect to car')
             return
         se.check_connected = False
@@ -106,9 +105,10 @@ def main():
 
             for slot in slots.ranges:
                 duration = slot.duration()
-                server_conn.set_boost(zappi.sno, SIDS.pop(), bdd='11111111',
+                server_conn.set_boost(zappi.sno, SIDS.pop(),
                                       bsh=slot.start_time.tm_hour,
                                       bsm=slot.start_time.tm_min,
+                                      dow=slot.start_time.tm_wday,
                                       bdh=duration // 60,
                                       bdm=duration % 60)
             price = slots.get_price()
