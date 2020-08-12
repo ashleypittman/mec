@@ -198,6 +198,10 @@ class Zappi(MyEnergiDiverter):
         self.smart_boost_minute = self._glimpse_safe(data, 'sbm')
         self.timed_boost = bool(self._glimpse_safe(data, 'bst'))
 
+    def boost_active(self):
+        """Return True if any kind of boost is active"""
+        return self.manual_boost or self.smart_boost or self.timed_boost
+
     def car_connected(self):
         """Returns True if car is connected"""
         return self.pstatus != 'Disconnected'

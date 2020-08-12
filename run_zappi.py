@@ -271,7 +271,7 @@ class LoopFns():
             elif self.sessions[zappi.sno]['low_charge'] and zappi.mode == 'Eco' and not sm.should_health_charge():
                 self.server_conn.set_mode_ecop(zappi.sno)
                 self.sessions[zappi.sno]['low_charge'] = False
-            elif zappi.mode not in ('Fast', 'Stop') and sm.should_stop_charge():
+            elif zappi.mode not in ('Fast', 'Stop') and sm.should_stop_charge() and not zappi.boost_active():
                 self.log.info('Stopping charge as battery full')
                 self.server_conn.set_mode_stop(zappi.sno)
                 sm.request_update()
