@@ -6,6 +6,8 @@ import os.path
 import time
 import sys
 import logging
+import daemon
+import resource
 import logging.handlers
 import datetime
 from collections import OrderedDict
@@ -23,6 +25,8 @@ RC_FILE = '~/.zappirc'
 
 DELAY = 60
 
+LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+
 def setup_logging(debug):
     """Configure global logging state"""
 
@@ -39,10 +43,9 @@ def setup_logging(debug):
     root.addHandler(channel)
 
     # Log debug to file, and add prefix.
-    log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            'logs', 'myenergi.log')
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
+    if not os.path.exists(LOG_DIR):
+        os.mkdir(LOG_DIR)
+    log_file = os.path.join(LOG_DIR, 'myenergi.log')
     channel = logging.handlers.TimedRotatingFileHandler(log_file, encoding='utf-8')
     my_pid = os.getpid()
     mformat = '%(asctime)s - {} - %(name)s - %(levelname)s - %(message)s'.format(my_pid)
