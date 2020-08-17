@@ -43,7 +43,7 @@ def setup_logging(debug):
                             'logs', 'myenergi.log')
     if not os.path.exists('logs'):
         os.mkdir('logs')
-    channel = logging.handlers.TimedRotatingFileHandler(log_file)
+    channel = logging.handlers.TimedRotatingFileHandler(log_file, encoding='utf-8')
     my_pid = os.getpid()
     mformat = '%(asctime)s - {} - %(name)s - %(levelname)s - %(message)s'.format(my_pid)
     oformat = logging.Formatter(mformat)

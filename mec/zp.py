@@ -115,7 +115,21 @@ class MyEnergiDevice:
             if self.sno in house_data and ct_name_key in house_data[self.sno]:
                 ct_name = house_data[self.sno][ct_name_key]
                 value = value * -1
-            self._values[ct_name] = value
+            if ct_name != 'Grid':
+                self._values[ct_name] = value
+            else:
+                if house_data['net_phases'] == True:
+                # 3 phase all report with same name "grid" so need to sum them
+                # note this produces a net import/export number.
+                # if phases are not netted Zappi assumes export monitoring on phase 1
+                    if not 'Grid' in self._values:
+                        self._values['Grid'] = 0
+                    self._values['Grid'] = self._values['Grid'] + value
+                else:
+                    if not 'Grid' in self._values: # only take the first grid value for phase 1
+                        self._values['Grid'] = value
+                        print('setting grid to '+ str(value))
+
         log.debug(self._values)
 
     def _glimpse_safe(self, data, key):
@@ -304,8 +318,7 @@ class MyEnergi:
             return sorted(self._zappis, key=lambda d: d.sno)
 
     def eddi_list(self, priority_order=False):
-        # Return a constant-order Eddi list.
-
+        # Return a constant-order Eddi list
         if priority_order:
             return sorted(self._eddis, key=lambda d: d.priority)
         else:
@@ -429,7 +442,7 @@ class MyEnergiHost:
 
         try:
             stream = urllib.request.urlopen(req, timeout=20)
-            log.debug('Responce was %s', stream.getcode())
+            log.debug('Response was %s', stream.getcode())
         except urllib.error.HTTPError:
             raise DataTimeout
         except urllib.error.URLError:
