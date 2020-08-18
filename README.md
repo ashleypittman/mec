@@ -36,7 +36,7 @@ jlr:
 For all cars it's possible to set the battery capacity and control the behaviour based on battery charge.  Setting the capacity is required to perform SOC calculations, the value here should be the amount of power requried to be delived to the car to change from 0% SOC to 100% SOC, as measured by the Zappi.
 charge_below is the SOC value at which the Zappi will automatically change to ECO mode regardless of surplus, this allows for protection of battery against sitting at low SOC values and ensuring there's a minimum SOC available.
 stop_at is the value that the Zappi will change into Stop mode, again to preserve battery.  charge_below and stop_at can both be set to 'null' to disable this feature.
-````
+```
 leaf:
     capacity: 35
     charge_below: 20
