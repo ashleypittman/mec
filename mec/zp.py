@@ -215,6 +215,27 @@ class Zappi(MyEnergiDiverter):
         self.smart_boost_hour = self._glimpse_safe(data, 'sbh')
         self.smart_boost_minute = self._glimpse_safe(data, 'sbm')
         self.timed_boost = bool(self._glimpse_safe(data, 'bst'))
+        # https://myenergi.info/viewtopic.php?p=19026 for details
+        # of locking.
+        self.lock = self._glimpse_safe(data, 'lck')
+        lock = self.lock
+        if lock >= 16:
+            # Status
+            log.debug('Charge session allowed')
+            lock -= 16
+        if lock >= 8:
+            # Setting
+            log.debug('Charge when locked')
+            lock -= 8
+        if lock >= 4:
+            log.debug('Lock when unplugged')
+            lock -= 4
+        if lock >= 2:
+            log.debug('Lock when plugged in')
+            lock -= 2
+        if lock >= 1:
+            log.info('Locked Now')
+            lock -= 1
 
     def boost_active(self):
         """Return True if any kind of boost is active"""
