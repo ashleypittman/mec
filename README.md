@@ -31,6 +31,17 @@ To use the Jaguar Land Rover integration the you need to pip install jlrpy and s
 jlr:
     username: <email@example.com>
     password: <Password for JLR Incontrol app>
+```
+
+For all cars it's possible to set the battery capacity and control the behaviour based on battery charge.  Setting the capacity is required to perform SOC calculations, the value here should be the amount of power requried to be delived to the car to change from 0% SOC to 100% SOC, as measured by the Zappi.
+charge_below is the SOC value at which the Zappi will automatically change to ECO mode regardless of surplus, this allows for protection of battery against sitting at low SOC values and ensuring there's a minimum SOC available.
+stop_at is the value that the Zappi will change into Stop mode, again to preserve battery.  charge_below and stop_at can both be set to 'null' to disable this feature.
+```
+leaf:
+    capacity: 35
+    charge_below: 20
+    stop_at: 80
+```
 
 If using the Octopus Agile features it's necessary to set the region
 ```
@@ -65,6 +76,9 @@ Sets boost timers on the Zappi.  Automatically configures boost timers for the Z
 
 ## run_zappi.py
 Reports current state of system to stdout, and can run as a server controlling the system.
+
+## run_zappi.py start
+Launches the deamon in the background.
 
 __Will run as a server if run with no argunments and change Zappi mode automatically, use "run_zappi.py once" to simply display data and exit___
 
