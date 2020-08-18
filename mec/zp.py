@@ -102,8 +102,10 @@ class MyEnergiDevice:
         while True:
             ct += 1
             # These are present in Harvi data for some reason.
-            self._glimpse_safe(data, 'ect{}p'.format(ct))
+            ct_phase = self._glimpse_safe(data, 'ect{}p'.format(ct))
             ct_name_key = 'ectt{}'.format(ct)
+            if ct_phase != 1:
+                log.debug('CT %s is on phase %d', ct_name_key, ct_phase)
             if ct_name_key not in data:
                 break
             value = self._glimpse_safe(data, 'ectp{}'.format(ct))
@@ -115,7 +117,23 @@ class MyEnergiDevice:
             if self.sno in house_data and ct_name_key in house_data[self.sno]:
                 ct_name = house_data[self.sno][ct_name_key]
                 value = value * -1
-            self._values[ct_name] = value
+            if ct_name != 'Grid':
+                self._values[ct_name] = value
+            else:
+                if 'net_phases' in house_data:
+                    if house_data['net_phases']:
+                        # 3 phase all report with same name "grid" so need to sum them
+                        # note this produces a net import/export number.
+                        # if phases are not netted Zappi assumes export monitoring on phase 1
+                        if not 'Grid' in self._values:
+                            self._values['Grid'] = 0
+                            self._values['Grid'] = self._values['Grid'] + value
+                    elif ct_phase == 1:
+                        # only take the first grid value for phase 1
+                            self._values['Grid'] = value
+                else:
+                    self._values[ct_name] = value
+
         log.debug(self._values)
 
     def _glimpse_safe(self, data, key):
