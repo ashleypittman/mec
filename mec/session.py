@@ -124,6 +124,11 @@ class CommonSession():
         self.log.debug('Starting new session')
         if 'capacity' in conf:
             self.capacity = conf['capacity']
+        if 'charge_below' in conf:
+            self.low_capacity = conf['charge_below']
+        if 'stop_at' in conf:
+            self.high_capacity = conf['stop_at']
+        print(self.high_capacity)
         self.check_connected = True
         self._soc_kwh = None
         self._refresh = False
@@ -156,10 +161,16 @@ class CommonSession():
     def should_health_charge(self):
         """Returns true if car should charge because of low battery"""
 
+        if not self.low_capacity:
+            return False
+
         return self._soc_kwh and self._soc_kwh < ((self.capacity * self.low_capacity) / 100)
 
     def should_stop_charge(self):
         """Returns true if the charge should stop"""
+
+        if not self.high_capacity:
+            return False
 
         return self._soc_kwh and self._soc_kwh > ((self.capacity * self.high_capacity) / 100)
 
