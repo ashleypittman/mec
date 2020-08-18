@@ -433,7 +433,7 @@ class MyEnergiHost:
 
         try:
             stream = urllib.request.urlopen(req, timeout=20)
-            log.debug('Responce was %s', stream.getcode())
+            log.debug('Response was %s', stream.getcode())
         except urllib.error.HTTPError:
             raise DataTimeout
         except urllib.error.URLError:
