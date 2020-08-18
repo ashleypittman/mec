@@ -46,9 +46,9 @@ class ePaper():
                 else:
                     div = zappi.charge_rate
                     if div:
-                        text.append('{} {:.1f}kW {}kWh {}'.format(zappi.mode, div/1000,
-                                                               zappi.charge_added,
-                                                               car))
+                        text.append('{} {:.1f}kW {:.1f}kWh {}'.format(zappi.mode, div/1000,
+                                                                      zappi.charge_added,
+                                                                      car))
                     elif zappi.mode == 'Stop':
                         text.append('{} {}'.format(zappi.mode, car))
                     else:
