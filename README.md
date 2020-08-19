@@ -50,12 +50,19 @@ agile:
 ```
 
 Finally, it's possible to apply some manual configuration to the CT clams on individual devices, for example if they are configured as 'Monitor' or 'AC Storage'.  In this way I am able to have mine report figures for my iBoost although it's seen by the Zappi as a AC Battery.
+
+If you have a 3 phase Zappi and net across phases then you need to note this in the config as below or the system will assume non-netting and take grid values from phase 1 only. You can ignore this for single phase and non-netting 3phase.
+
+For clarity on logging or display its optional to add a name for your Zappi here too
 ```
 house_data:
     <Zaapi serial number>:
         ectt2: <Name to apply to this CT>
+        name: Outside Zappi
     <Zappi serial number>:
         ectt3: <Name to apply to this CT>
+        name: Garage Zappi
+    net_phases1: True
 ```
 
 # Use
