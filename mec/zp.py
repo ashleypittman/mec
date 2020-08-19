@@ -98,6 +98,11 @@ class MyEnergiDevice:
         self._values = {}
         self.data_age = elapsed
         self.firmware = self._glimpse(data, 'fwv')
+        if self.sno in house_data:
+            if 'name' in house_data[self.sno]:
+                self.zname = house_data[self.sno]['name']
+        else:
+            self.zname = 'Zappi'
         ct = 0
         while True:
             ct += 1
@@ -212,6 +217,7 @@ class Zappi(MyEnergiDiverter):
         self.smart_boost_minute = self._glimpse_safe(data, 'sbm')
         self.timed_boost = bool(self._glimpse_safe(data, 'bst'))
 
+
     def car_connected(self):
         """Returns True if car is connected"""
         return self.pstatus != 'Disconnected'
@@ -227,7 +233,7 @@ class Zappi(MyEnergiDiverter):
         """Return a multi-line test description of the current state"""
         if not rep:
             rep = ReportCapture()
-        rep.log('Zappi mode is {}'.format(self.mode))
+        rep.log(self.zname+' mode is {}'.format(self.mode))
         # The min charge level is often given as 1.4kw however it needs to take into
         # account voltage.
         rep.log('Min Green level is {}% ({})'.format(self.min_green_level,

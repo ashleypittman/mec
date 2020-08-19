@@ -154,7 +154,7 @@ def get_graph(state, sockets):
         if key == 'Zappi':
             for zappi in state.zappi_list(priority_order=True):
                 if zappi.charge_rate:
-                    gdata.append(('Zappi({})'.format(zappi.sno), zappi.charge_rate))
+                    gdata.append((zappi.zname+'({})'.format(zappi.sno), zappi.charge_rate))
         elif key in state._values and state._values[key] != 0:
             value = state._values[key]
             if key.startswith('G'):
@@ -253,7 +253,6 @@ class LoopFns():
 
     def _try_update_sm(self):
         state = self.server_conn.state
-
         have_leaf = False
         for session in self.sessions.values():
             if session['se'].session and session['se'].session._is_valid:
