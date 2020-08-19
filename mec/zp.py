@@ -109,7 +109,7 @@ class MyEnergiDevice:
             # These are present in Harvi data for some reason.
             ct_phase = self._glimpse_safe(data, 'ect{}p'.format(ct))
             ct_name_key = 'ectt{}'.format(ct)
-            if ct_phase != 1:
+            if ct_phase not in {1,0}:
                 log.debug('CT %s is on phase %d', ct_name_key, ct_phase)
             if ct_name_key not in data:
                 break
