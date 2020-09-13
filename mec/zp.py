@@ -461,10 +461,13 @@ class MyEnergiHost:
         req.add_header('User-Agent', 'Wget/1.14 (linux-gnu)')
 
         auth_handler = urllib.request.HTTPPasswordMgr()
-        auth_handler.add_password(user=self.__username,
-                                  uri=url,
-                                  realm='MyEnergi Telemetry',
-                                  passwd=self.__password)
+        try:
+            auth_handler.add_password(user=self.__username,
+                                      uri=url,
+                                      realm='MyEnergi Telemetry',
+                                      passwd=self.__password)
+        except ConnectionResetError:
+            raise DataTimeout
 
         handler = urllib.request.HTTPDigestAuthHandler(auth_handler)
         opener = urllib.request.build_opener(handler)
@@ -591,7 +594,7 @@ class MyEnergiHost:
         # Slot is one of 11,12,13,14
         # Start time is in 24 hour clock, 15 minute intervals.
         # Duration is hoursminutes and is less than 10 hours.
-        if dow:
+        if dow is not None:
             bdd = list('00000000')
             bdd[dow+1] = '1'
             bdd = ''.join(bdd)
