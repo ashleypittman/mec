@@ -310,7 +310,7 @@ class LoopFns():
         for zappi in state.zappi_list(priority_order=True):
             if zappi.sno in self.auto_eco and zappi.mode != 'Eco':
                 self.auto_eco.remove(zappi.sno)
-            if zappi.car_connected() and not zappi.status == 'Hot' and zappi.mode != 'Fast':
+            if zappi.car_connected() and not zappi.status == 'Hot' and zappi.mode not in ('Fast', 'Stop'):
                 can_auto_eco = True
                 devices.append(zappi)
             if zappi.mode == 'Fast':
