@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--by-hour', type=int, help='Finish by this hour', default=8)
     parser.add_argument('--target-soc', type=int, help='Charge car to SOC', default=0)
     parser.add_argument('--reset', help='Clear all boost values', action='store_true')
+    parser.add_argument('--sno', type= int, help='Serial number of Zappi to boost', default=0)
     parser.add_argument('--dry-run', help='Show would would be set, but do not set it', action='store_true')
     args = parser.parse_args()
 
@@ -96,28 +97,29 @@ def main():
     server_conn.refresh()
 
     for zappi in server_conn.state.zappi_list():
-        print('Zappi is currently in mode {}'.format(zappi.mode))
+        if args.sno == 0 or args.sno == zappi.sno:
+            print('Zappi is currently in mode {}'.format(zappi.mode))
 
-        SIDS=[11,12,13,14]
-        if not args.reset:
-            if not zappi.car_connected():
-                print('Setting boost times without car connected?')
+            SIDS=[11,12,13,14]
+            if not args.reset:
+                if not zappi.car_connected():
+                    print('Setting boost times without car connected?')
 
-            for slot in slots.ranges:
-                duration = slot.duration()
-                server_conn.set_boost(zappi.sno, SIDS.pop(),
-                                      bsh=slot.start_time.tm_hour,
-                                      bsm=slot.start_time.tm_min,
-                                      dow=slot.start_time.tm_wday,
-                                      bdh=duration // 60,
-                                      bdm=duration % 60)
-            price = slots.get_price()
-            total_price = charge_rate / 1000 * price
-            print('Estimated charge cost {:.1f} pence'.format(total_price))
+                for slot in slots.ranges:
+                    duration = slot.duration()
+                    server_conn.set_boost(zappi.sno, SIDS.pop(),
+                                          bsh=slot.start_time.tm_hour,
+                                          bsm=slot.start_time.tm_min,
+                                          dow=slot.start_time.tm_wday,
+                                          bdh=duration // 60,
+                                          bdm=duration % 60)
+                price = slots.get_price()
+                total_price = charge_rate / 1000 * price
+                print('Estimated charge cost {:.1f} pence'.format(total_price))
 
-        # Now clear any other boost timers.
-        for zslot in SIDS:
-            server_conn.set_boost(zappi.sno, zslot) 
+            # Now clear any other boost timers.
+            for zslot in SIDS:
+                server_conn.set_boost(zappi.sno, zslot)
 
 if __name__ == '__main__':
     sys.exit(main())
