@@ -373,32 +373,70 @@ class jlrSession(CommonSession):
 
     # Estimate of battery capacity, in terms of KwH charge to
     # go from 0-100%.  Used for SOC calculations.
-    capacity = 85
-    charge_rate = 7800
+    capacity = 80
+    charge_rate = 7400
+    home_latitude = 0.0
+    home_longitude = 0.0
     name = 'Jaguar'
 
     def __init__(self, conf, jlr):
         super().__init__(conf['jlr'])
         jlr_conf = conf['jlr']
-
-        self._jlr = jlr.Connection(jlr_conf['username'], jlr_conf['password']).vehicles[0]
+        self._start_time = time.gmtime()
         self._base_kwh = None
-
+        self.capacity = jlr_conf['capacity']
+        self.charge_rate = jlr_conf['charge_rate']
+        self.home_latitude = jlr_conf['home_latitude']
+        self.home_longitude = jlr_conf['home_longitude']
+        self._jlr = jlr.Connection(jlr_conf['username'], jlr_conf['password']).vehicles[0]
 
     def _get_soc(self):
         if not self._jlr:
             return
-        raw = self._jlr.get_health_status()
-        self.log.debug(raw)
-        if 'Exception' in raw:
+        try:
+            current_soc = int(self._jlr.get_status('EV_STATE_OF_CHARGE'))
+        except:
+            self.log.info('cant connect to car right now')
+            # authentication can fail if you request too often
             return
         self._is_valid = True
-        current_soc = int(self._jlr.get_status('EV_STATE_OF_CHARGE'))
         return current_soc
+
+    def _fetch_latest(self, kwh, start_time):
+        at_home = True
+        if (self.home_latitude != 0.0 and self.home_longitude != 0.0):
+            p = self._jlr.get_position()
+            position = (p['position']['latitude'], p['position']['longitude'])
+            home = (float(self.home_latitude), float(self.home_longitude))
+            d = int(1000*distance(home,position))
+            if (d > 100):
+                self.log.info("car is not at home : "+str(d)+"m from normal location")
+                at_home = False
+        try:
+            vehicleStatus = self._jlr.get_status()['vehicleStatus']
+        except:
+            self.log.info('cant connect to car right now')
+            return
+        status = { d['key'] : d['value'] for d in vehicleStatus['evStatus'] }
+        charging_status = status('EV_CHARGING_STATUS')
+        current_soc = status('EV_STATE_OF_CHARGE')
+        self.log.info("current SoC is "+str(current_soc)+"%")
+
+        if (status('EV_CHARGING_METHOD')  == "WIRED" and at_home == True):
+            self.log.info("car is at home and charging status is "+str(charging_status))
+        else:
+            self.log.info("car is not plugged in or not at home")
+            return
+        return current_soc
+
 
     def _do_refresh(self):
 
-        new_percent = self._get_soc()
+        new_percent = self._fetch_latest(0, self._refresh_time)
+        if not new_percent:
+            return
+
+        self._refresh = False
 
         self.log.info('State of charge update %d%% %d%%',
                       self.percent_charge(),
@@ -438,3 +476,36 @@ class jlrSession(CommonSession):
             self.log.info('Total charge added %.2f', kwh)
             self.log.info('Total charge held %.2f', self._soc_kwh)
             self.log.info('SOC percentage %.0f', self.percent_charge())
+
+    def distance(origin, destination):
+        """
+        From https://stackoverflow.com/questions/19412462
+        Calculate the Haversine distance.
+        Parameters
+        ----------
+        origin : tuple of float
+            (lat, long)
+        destination : tuple of float
+            (lat, long)
+        Returns
+            -------
+        distance_in_km : float
+        Examples
+        --------
+        >>> origin = (48.1372, 11.5756)  # Munich
+        >>> destination = (52.5186, 13.4083)  # Berlin
+        >>> round(distance(origin, destination), 1)
+        504.2
+        """
+        lat1, lon1 = origin
+        lat2, lon2 = destination
+        radius = 6371  # km
+
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = (math.sin(dlat / 2) * math.sin(dlat / 2) +
+            math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+            math.sin(dlon / 2) * math.sin(dlon / 2))
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        d = radius * c
+        return d

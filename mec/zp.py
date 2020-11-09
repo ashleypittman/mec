@@ -98,13 +98,18 @@ class MyEnergiDevice:
         self._values = {}
         self.data_age = elapsed
         self.firmware = self._glimpse(data, 'fwv')
+        if self.sno in house_data:
+            if 'name' in house_data[self.sno]:
+                self.zname = house_data[self.sno]['name']
+        else:
+            self.zname = 'Zappi'
         ct = 0
         while True:
             ct += 1
             # These are present in Harvi data for some reason.
             ct_phase = self._glimpse_safe(data, 'ect{}p'.format(ct))
             ct_name_key = 'ectt{}'.format(ct)
-            if ct_phase != 1:
+            if ct_phase not in {1,0}:
                 log.debug('CT %s is on phase %d', ct_name_key, ct_phase)
             if ct_name_key not in data:
                 break
@@ -120,20 +125,15 @@ class MyEnergiDevice:
             if ct_name != 'Grid':
                 self._values[ct_name] = value
             else:
-                if 'net_phases' in house_data:
-                    if house_data['net_phases']:
+                if not 'Grid' in self._values:
+                    self._values['Grid'] = value # only take the first grid value for non-netting 3 phase
+                else:
+                    if 'net_phases' in house_data:
+                        if house_data['net_phases'] == True:
                         # 3 phase all report with same name "grid" so need to sum them
                         # note this produces a net import/export number.
                         # if phases are not netted Zappi assumes export monitoring on phase 1
-                        if not 'Grid' in self._values:
-                            self._values['Grid'] = 0
                             self._values['Grid'] = self._values['Grid'] + value
-                    elif ct_phase == 1:
-                        # only take the first grid value for phase 1
-                            self._values['Grid'] = value
-                else:
-                    self._values[ct_name] = value
-
         log.debug(self._values)
 
     def _glimpse_safe(self, data, key):
@@ -256,7 +256,7 @@ class Zappi(MyEnergiDiverter):
         """Return a multi-line test description of the current state"""
         if not rep:
             rep = ReportCapture()
-        rep.log('Zappi mode is {}'.format(self.mode))
+        rep.log(self.zname+' mode is {}'.format(self.mode))
         # The min charge level is often given as 1.4kw however it needs to take into
         # account voltage.
         rep.log('Min Green level is {}% ({})'.format(self.min_green_level,
