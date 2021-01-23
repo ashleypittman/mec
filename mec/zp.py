@@ -68,6 +68,9 @@ class DataBogus(DataException):
 class DataTimeout(DataException):
     """Timeout from server"""
 
+class HostChanged(DataException):
+    """Server host has changed."""
+
 class ReportCapture:
     """Class for concatenating log strings"""
 
@@ -439,17 +442,43 @@ class MyEnergi:
 
         return str(rep)
 
+ASN='X_MYENERGI-asn'
+
 class MyEnergiHost:
     """Class for downloading data"""
 
     def __init__(self, username, password, house_conf={}):
         self.__username = str(username)
         self.__password = password
-        self.__host = 's{}.myenergi.net'.format(self.__username[-1])
+        self.__host = 'director.myenergi.net'
         self.state = None
         self._house_conf = house_conf
 
+    def _maybe_set_host(self, headers):
+        # Check the returned headers to check if a different host
+        # should be used, see
+        # https://myenergi.info/update-to-active-server-redirects-t2980.html
+
+        if ASN not in headers:
+            return
+        if headers[ASN] == self.__host:
+            return
+        log.debug('Changing host to {}'.format(headers[ASN]))
+        self.__host = headers[ASN]
+        raise HostChanged
+
     def _load(self, suffix='cgi-jstatus-*'):
+        # Connect to myenergi servers, retrying with new host up to
+        # three times.
+        for _ in range(2):
+            try:
+                return self._do_load(suffix)
+            except HostChanged:
+                pass
+        # Finally, just try it again, but don't catch it this time.
+        return self._do_load(suffix)
+
+    def _do_load(self, suffix):
         # Connect to the myenergi servers and return
         # python dict of results.
 
@@ -476,7 +505,9 @@ class MyEnergiHost:
         try:
             stream = urllib.request.urlopen(req, timeout=20)
             log.debug('Response was %s', stream.getcode())
-        except urllib.error.HTTPError:
+            self._maybe_set_host(stream.headers)
+        except urllib.error.HTTPError as stream:
+            self._maybe_set_host(stream.headers)
             raise DataTimeout
         except urllib.error.URLError:
             # Timeout from server.
