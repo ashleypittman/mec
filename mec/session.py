@@ -26,7 +26,12 @@ class SessionManager():
             if not zappi.car_connected():
                 end_session = True
             if zappi.charge_added < self._known_charge_added:
-                end_session = True
+                # On the new server software the che value
+                # can fluctuate, so for now only reset this
+                # if the charge has dropped to a very low
+                # figure.
+                if zappi.charge_added < 1:
+                    end_session = True
             if end_session:
                 self.session = None
         if self.session is None and zappi.car_connected():
@@ -269,6 +274,8 @@ class LeafSession(CommonSession):
         try:
             self._leaf = self._py.get_leaf()
         except self._py_import.CarwingsError:
+            pass
+        except KeyError:
             pass
         return self._leaf
 

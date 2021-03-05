@@ -96,7 +96,7 @@ class ePaper():
             if abs(heating_value) < 20:
                 text.append('Heating is off')
             else:
-                text.append('Heating is on')
+                text.append('Heating is on ({})'.format(heating_value))
         self._to_show = text
         log.debug(self._showing)
         log.debug(self._to_show)

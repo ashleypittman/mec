@@ -344,12 +344,19 @@ class LoopFns():
                 # adjustment is needed, however if the iBoost is not using any
                 # power then allow 250w for the charge rate to increase as
                 # over time this should turn off any sockets preventing this.
-                if zappi.sno in self.auto_eco and 'iBoost' in state._values:
-                    # TODO: This value needs checking.
-                    if (available_power + state._values['iBoost'] + zappi.charge_rate) < 1500:
-                        self.log.info('Setting Zappi to eco+ for %s %d %d %d', zappi.sno, available_power, state._values['iBoost'], zappi.charge_rate)
-                        self.server_conn.set_mode_ecop(zappi.sno)
-                        #self.auto_eco.remove(zappi.sno)
+
+                if zappi.sno in self.auto_eco:
+                    if 'iBoost' in state._values:
+                        # TODO: This value needs checking.
+                        if (available_power + state._values['iBoost'] + zappi.charge_rate) < 1500:
+                            self.log.info('Setting Zappi to eco+ %s avail: %d iBoost: %d rate: %d', zappi.sno, available_power, state._values['iBoost'], zappi.charge_rate)
+                            self.server_conn.set_mode_ecop(zappi.sno)
+                            #self.auto_eco.remove(zappi.sno)
+                    else:
+                        # If there isn't hot water because of import then turn off car.
+                        if available_power < zappi.min_charge_rate_with_level():
+                            self.log.info('Setting Zappi to eco+ %s avail: %d rate: %d', zappi.sno, available_power, zappi.charge_rate)
+                            self.server_conn.set_mode_ecop(zappi.sno)
                 if available_power >= zappi.min_charge_rate_with_level() or zappi.charge_rate > 0:
                     available_power -= max(zappi.charge_rate,
                                            zappi.min_charge_rate_with_level())
@@ -420,6 +427,9 @@ def run_loop(server_conn, sockets, session_engine, display):
         # Refresh all data.  If it appears bogus then wait for a bit and resample
         try:
             loop_handler.resample()
+        except mec.zp.DataTimeout:
+            time.sleep(20)
+            continue
         except mec.zp.DataException:
             time.sleep(5)
             continue

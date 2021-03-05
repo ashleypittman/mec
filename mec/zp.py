@@ -101,9 +101,8 @@ class MyEnergiDevice:
         self._values = {}
         self.data_age = elapsed
         self.firmware = self._glimpse(data, 'fwv')
-        if self.sno in house_data:
-            if 'name' in house_data[self.sno]:
-                self.zname = house_data[self.sno]['name']
+        if self.sno in house_data and 'name' in house_data[self.sno]:
+            self.zname = house_data[self.sno]['name']
         else:
             self.zname = 'Zappi'
         ct = 0
@@ -172,7 +171,11 @@ class MyEnergiDiverter(MyEnergiDevice):
 
     def __init__(self, data, hc):
         super().__init__(data, hc)
-        self.voltage = self._glimpse(data, 'vol')
+        voltage = self._glimpse(data, 'vol')
+        if voltage > 1000:
+            self.voltage = voltage / 10
+        else:
+            self.voltage = voltage
         self.frequency = self._glimpse(data, 'frq')
         log.debug('Voltage %f frequency %f', self.voltage, self.frequency)
         self.grid = self._glimpse_safe(data, 'grd')
@@ -315,9 +318,11 @@ class MyEnergi:
                 # Skip devices that don't exist.
                 if isinstance(v, list) and len(v) == 0:
                     continue
-                if e == 'asn':
+                if e in ('asn', 'fwv'):
                     continue
                 for device_data in v:
+                    if not isinstance(device_data, dict):
+                        continue
                     device_data = dict(device_data)
                     if e == 'zappi':
                         self._zappis.append(Zappi(device_data, house_data))
@@ -402,6 +407,7 @@ class MyEnergi:
         try:
             house_use -= self._values['iBoost']
             house_use -= self._values['Heating']
+            rep.log('Heating is using {}'.format(self._values['Heating']))
         except KeyError:
             pass
 
@@ -489,11 +495,15 @@ class MyEnergiHost:
 
         req.add_header('User-Agent', 'Wget/1.14 (linux-gnu)')
 
+        realm = 'myenergi App Server'
+        if self.__host == 'director.myenergi.net':
+            realm = 'MyEnergi Telemetry'
+
         auth_handler = urllib.request.HTTPPasswordMgr()
         try:
             auth_handler.add_password(user=self.__username,
                                       uri=url,
-                                      realm='MyEnergi Telemetry',
+                                      realm=realm,
                                       passwd=self.__password)
         except ConnectionResetError:
             raise DataTimeout
