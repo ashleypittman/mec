@@ -456,7 +456,8 @@ class MyEnergiHost:
     def __init__(self, username, password, house_conf={}):
         self.__username = str(username)
         self.__password = password
-        self.__host = 'director.myenergi.net'
+        #self.__host = 'director.myenergi.net'
+        self.__host = 's18.myenergi.net'
         self.state = None
         self._house_conf = house_conf
 
@@ -465,9 +466,12 @@ class MyEnergiHost:
         # should be used, see
         # https://myenergi.info/update-to-active-server-redirects-t2980.html
 
+
         if ASN not in headers:
             return
         if headers[ASN] == self.__host:
+            return
+        if headers[ASN] == 'undefined':
             return
         log.debug('Changing host to {}'.format(headers[ASN]))
         self.__host = headers[ASN]
@@ -495,9 +499,7 @@ class MyEnergiHost:
 
         req.add_header('User-Agent', 'Wget/1.14 (linux-gnu)')
 
-        realm = 'myenergi App Server'
-        if self.__host == 'director.myenergi.net':
-            realm = 'MyEnergi Telemetry'
+        realm = 'MyEnergi Telemetry'
 
         auth_handler = urllib.request.HTTPPasswordMgr()
         try:
