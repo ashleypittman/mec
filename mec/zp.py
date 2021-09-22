@@ -21,6 +21,10 @@ PSTATUSES = {'A': 'Disconnected',
              'C2': 'Charging',
              'F': 'Fault'}
 
+# Eddi Boost Types.
+EBT = ['Not boostable', 'Boiler', 'Heat Pump', 'Battery']
+ESTATUSES = ['??', 'Paused', 'Diverting', 'Boost', 'Max Temp Reached', 'Stopped']
+
 E_CODES = {0: 'OK',
            1: 'Invalid ID',
            2: 'Invalid DSR command sequence number',
@@ -183,6 +187,11 @@ class MyEnergiDiverter(MyEnergiDevice):
         self.phase_count = self._glimpse(data, 'pha')
         self.priority = self._glimpse(data, 'pri')
 
+        self.charge_added = self._glimpse_safe(data, 'che')
+        self.manual_boost = bool(self._glimpse_safe(data, 'bsm'))
+        self.timed_boost = bool(self._glimpse_safe(data, 'bst'))
+        self.charge_rate = self._glimpse_safe(data, 'div')
+
         # Daylight savings and Time Zone.
         self.dst = self._glimpse_safe(data, 'dst')
         self.tz = self._glimpse_safe(data, 'tz')
@@ -196,6 +205,30 @@ class Eddi(MyEnergiDiverter):
 
     def __init__(self, data, hc):
         super().__init__(data, hc)
+        # Priority
+        self._glimpse(data, 'hpri')
+
+        # These appear to be names, but not the same as shown in the app.
+        self._glimpse(data, 'ht1')
+        self._glimpse(data, 'ht2')
+
+        self.heater_number = self._glimpse(data, 'hno')
+
+        self.status = ESTATUSES[self._glimpse(data, 'sta')]
+
+        # Boost time left, in seconds.
+        self.remaining_boost_time = self._glimpse(data, 'rbt')
+
+        relay_board = bool(self._glimpse(data, 'rbc'))
+
+        self.temp_1 = self._glimpse(data, 'tp1')
+        self.temp_2 = self._glimpse(data, 'tp2')
+
+        self.relay_1_active = bool(self._glimpse(data, 'r1a'))
+        self.relay_2_active = bool(self._glimpse(data, 'r2a'))
+
+        self.relay_1_boost_type = EBT[self._glimpse(data, 'r1b')]
+        self.relay_2_boost_type = EBT[self._glimpse(data, 'r2b')]
 
 class Zappi(MyEnergiDiverter):
     """A Zappi class"""
@@ -211,16 +244,12 @@ class Zappi(MyEnergiDiverter):
         self.mode = MODES[self._glimpse_safe(data, 'zmo')]
         self.status = STATUSES[self._glimpse_safe(data, 'sta')]
         self.pstatus = PSTATUSES[self._glimpse(data, 'pst')]
-        self.charge_rate = self._glimpse_safe(data, 'div')
         self._values['Zappi'] = self.charge_rate
-        self.charge_added = self._glimpse_safe(data, 'che')
-        self.manual_boost = bool(self._glimpse_safe(data, 'bsm'))
         self.manual_boost_level = self._glimpse_safe(data, 'tbk')
         self.smart_boost = bool(self._glimpse_safe(data, 'bss'))
         self.smart_boost_level = self._glimpse_safe(data, 'sbk')
         self.smart_boost_hour = self._glimpse_safe(data, 'sbh')
         self.smart_boost_minute = self._glimpse_safe(data, 'sbm')
-        self.timed_boost = bool(self._glimpse_safe(data, 'bst'))
         # https://myenergi.info/viewtopic.php?p=19026 for details
         # of locking.
         self.lock = self._glimpse_safe(data, 'lck')
