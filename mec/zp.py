@@ -565,7 +565,8 @@ class MyEnergiHost:
             log.debug('Load took %.1f seconds', duration)
             data = json.loads(raw_data)
             if 'status' in data:
-                status = data['status']
+                status = int(data['status'])
+                data['status'] = status
                 if -status in E_CODES and data['statustext'] == '':
                     data['statustext'] = E_CODES[-status]
                     log.debug('request failed %s', suffix)
@@ -677,13 +678,13 @@ class MyEnergiHost:
             bdh = 8
             bdm = 0
 
-        res = self._load(suffix='cgi-boost-time-Z{}-{}-{:02}{}-{}{}-{}'.format(zid,
-                                                                               slot,
-                                                                               bsh,
-                                                                               bsm,
-                                                                               bdh,
-                                                                               bdm,
-                                                                               bdd))
+        res = self._load(suffix='cgi-boost-time-Z{}-{}-{:02}{:02}-{}{:02}-{}'.format(zid,
+                                                                                     slot,
+                                                                                     bsh,
+                                                                                     bsm,
+                                                                                     bdh,
+                                                                                     bdm,
+                                                                                     bdd))
         if 'status' in res and res['status'] != 0:
             log.info('Error code is %s', E_CODES[-res['status']])
             return
