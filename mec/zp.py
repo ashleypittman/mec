@@ -219,10 +219,13 @@ class Eddi(MyEnergiDiverter):
         # Boost time left, in seconds.
         self.remaining_boost_time = self._glimpse_safe(data, 'rbt')
 
-        relay_board = bool(self._glimpse(data, 'rbc'))
 
         self.temp_1 = self._glimpse(data, 'tp1')
         self.temp_2 = self._glimpse(data, 'tp2')
+
+        relay_board = bool(self._glimpse(data, 'rbc'))
+        if not relay_board:
+            return
 
         self.relay_1_active = bool(self._glimpse(data, 'r1a'))
         self.relay_2_active = bool(self._glimpse(data, 'r2a'))
