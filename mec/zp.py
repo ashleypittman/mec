@@ -217,7 +217,7 @@ class Eddi(MyEnergiDiverter):
         self.status = ESTATUSES[self._glimpse(data, 'sta')]
 
         # Boost time left, in seconds.
-        self.remaining_boost_time = self._glimpse(data, 'rbt')
+        self.remaining_boost_time = self._glimpse_safe(data, 'rbt')
 
         relay_board = bool(self._glimpse(data, 'rbc'))
 
