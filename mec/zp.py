@@ -206,7 +206,7 @@ class Eddi(MyEnergiDiverter):
     def __init__(self, data, hc):
         super().__init__(data, hc)
         # Priority
-        self._glimpse(data, 'hpri')
+        self.heater_priority = self._glimpse(data, 'hpri')
 
         # These appear to be names, but not the same as shown in the app.
         self._glimpse(data, 'ht1')
@@ -739,3 +739,13 @@ class MyEnergiHost:
         if key in res:
             return res[key]
         return res
+
+    def set_heater_priority(self, heater, eid):
+        if heater:
+            res = self._load(suffix='cgi-set-heater-priority-E{}'.format(eid))
+            cpm = res['cpm']
+            res = self._load(suffix='cgi-set-heater-priority-E{}-{}-{}'.format(eid, heater, cpm))
+        else:
+            res = self._load(suffix='cgi-set-heater-priority-E{}'.format(eid))
+        log.debug(res)
+        return res['hpri']
