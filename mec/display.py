@@ -72,6 +72,11 @@ class ePaper():
         if 'Generation' in state._values:
             text.append('{} {}'.format(gen, istate))
         text.append('Days import/export: {:.1f} {:.1f}'.format(grid_today.kwh(), grid_today.nkwh()))
+        for eddi in state.eddi_list():
+            if eddi.charge_rate:
+                text.append('Temp {}:{} {} {:.1f}kW'.format(eddi.temp_1, eddi.temp_2, eddi.status, eddi.charge_rate/1000))
+            else:
+                text.append('Temp {}:{} {}'.format(eddi.temp_1, eddi.temp_2, eddi.status))
         if 'iBoost' in culm_values:
             iboost_today = culm_values['iBoost']
             if state._values['iBoost'] < 50:

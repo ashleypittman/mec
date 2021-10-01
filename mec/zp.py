@@ -23,7 +23,7 @@ PSTATUSES = {'A': 'Disconnected',
 
 # Eddi Boost Types.
 EBT = ['Not boostable', 'Boiler', 'Heat Pump', 'Battery']
-ESTATUSES = ['??', 'Paused', 'Diverting', 'Boost', 'Max Temp Reached', 'Stopped']
+ESTATUSES = ['?', 'Waiting for surplus', 'Paused', 'Diverting', 'Boost', 'Max Temp Reached', 'Stopped']
 
 E_CODES = {0: 'OK',
            1: 'Invalid ID',
