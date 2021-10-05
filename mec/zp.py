@@ -129,7 +129,10 @@ class MyEnergiDevice:
                 ct_name = house_data[self.sno][ct_name_key]
                 value = value * -1
             if ct_name != 'Grid':
-                self._values[ct_name] = value
+                if ct_name in self._values:
+                    self._values[ct_name] += value
+                else:
+                    self._values[ct_name] = value
             else:
                 if not 'Grid' in self._values:
                     self._values['Grid'] = value # only take the first grid value for non-netting 3 phase
