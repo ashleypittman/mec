@@ -372,7 +372,10 @@ class MyEnergi:
             for (key, value) in device._values.items():
                 if key == 'Zappi':
                     continue
-                self._values[key] = value
+                if key in self._values:
+                    self._values[key] += value
+                else:
+                    self._values[key] = value
                 self._value_time[key] = device.time
         if check:
             for device in self._zappis + self._eddis:

@@ -136,6 +136,9 @@ def show_zappi_data(config, server_conn, sockets):
         print(zappi.report())
     for harvi in state._harvis:
         print(harvi.report())
+    for eddi in state.eddi_list(priority_order=True):
+        print('Priority for {} is {}'.format(eddi.sno, eddi.priority))
+        print(eddi.report())
 
     for line in get_graph(state, sockets):
         print(line)
