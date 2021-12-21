@@ -10,6 +10,11 @@ This builds heavily on https://github.com/twonk/MyEnergi-App-Api and https://mye
 
 The code can be run directly from a checkout, no install process is required however some non-core python libs might be needed.
 
+These can be installed with
+```
+pip3 install -r requirements.txt
+```
+
 A config file (~/.zappirc) is required and should contain at least the credentials used to authenticate against the MyEnergi severs,
 
 ```
