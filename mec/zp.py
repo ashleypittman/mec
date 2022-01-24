@@ -624,9 +624,25 @@ class MyEnergiHost:
         res = self._load(suffix='cgi-set-min-green-Z{}-{}'.format(zid, level))
         log.debug(res)
 
-    def get_boost(self, zid):
+    def _sno_to_key(self, sno):
+        """Return the API key for sno"""
+        target = None
+
+        for dev in self.state.eddi_list():
+            if dev.sno == sno:
+                return 'E{}'.format(sno)
+        for dev in self.state.zappi_list():
+            if dev.sno == sno:
+                return 'Z{}'.format(sno)
+
+        raise Exception('serial number not found')
+
+    def get_boost(self, sno):
         """Display active boost settings"""
-        res = self._load(suffix='cgi-boost-time-Z{}'.format(zid))
+
+        key = self._sno_to_key(sno)
+
+        res = self._load(suffix='cgi-boost-time-{}'.format(key))
         log.debug(res)
         self._show_timed_boost(res)
 
@@ -653,11 +669,10 @@ class MyEnergiHost:
                 duration = datetime.timedelta(hours=instance['bdh'],
                                               minutes=instance['bdm'])
                 end_time = start_time + duration
-                print('Start {} End {} (duration {:02d}:{:02d}) days {}'.format(
-                    start_time.strftime('%H:%M'),
-                    end_time.strftime('%H:%M'),
-                    instance['bdh'], instance['bdm'],
-                    ','.join(boost_days)))
+                if duration.seconds != 0:
+                     print('Start {} End {} (duration {:02d}:{:02d}) days {}'.format(
+                        start_time.strftime('%H:%M'), end_time.strftime('%H:%M'),
+                        instance['bdh'], instance['bdm'], ','.join(boost_days)))
             del instance['bsh']
             del instance['bsm']
             del instance['bdh']
