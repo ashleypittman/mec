@@ -79,7 +79,7 @@ def main():
                 obj.set_initial_power(socket['power'])
             if 'night' in socket and socket['night']:
                 obj.on_time = datetime.datetime(year=1977, month=1, day=1,
-                                                hour=0, minute=15)
+                                                hour=0, minute=30)
                 obj.duration = datetime.timedelta(hours=4)
             obj.load_todays_power()
             sockets.append(obj)
