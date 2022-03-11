@@ -21,6 +21,7 @@ FIELD_NAMES = {'gep': 'Generation',
                'imp': 'Imported',
                'exp': 'Exported'}
 
+
 class Day():
 
     def __init__(self, year, month, day):
@@ -28,7 +29,9 @@ class Day():
         self.tm_mon = month
         self.tm_mday = day
 
+
 show_headers = True
+
 
 def main():
     """Main"""
@@ -85,6 +88,7 @@ def main():
         else:
             load_day(server_conn, zid, day, hourly, totals)
 
+
 def load_day(server_conn, zid, day, hourly, totals):
 
     global show_headers
@@ -96,7 +100,8 @@ def load_day(server_conn, zid, day, hourly, totals):
         res = server_conn.get_minute_data(zid, day=day)
         prev_sample_time = -60
 
-    headers = ['imp', 'exp', 'gen', 'gep', 'h1d', 'h1b', 'pect1', 'nect1', 'pect2', 'nect2', 'pect3', 'nect3']
+    headers = ['imp', 'exp', 'gen', 'gep', 'h1d', 'h1b',
+               'pect1', 'nect1', 'pect2', 'nect2', 'pect3', 'nect3']
     table_headers = ['Time', 'Duration']
     data = []
     pm_totals = {}
@@ -170,6 +175,7 @@ def load_day(server_conn, zid, day, hourly, totals):
     else:
         print(tabulate.tabulate(data))
     return (table_headers, data, row)
+
 
 if __name__ == '__main__':
     main()

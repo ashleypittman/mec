@@ -5,6 +5,7 @@
 import run_zappi
 import mec.zp
 
+
 def main():
     """Main"""
 
@@ -15,8 +16,9 @@ def main():
 
     for zappi in server_conn.state.zappi_list():
         print('Zappi is currently in mode {}'.format(zappi.mode))
-        #print(server_conn.set_mode_ecop(zappi.sno))
+        # print(server_conn.set_mode_ecop(zappi.sno))
         print(server_conn.set_mode_stop(zappi.sno))
+
 
 if __name__ == '__main__':
     main()

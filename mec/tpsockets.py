@@ -11,6 +11,8 @@ import mec.power_meter
 
 # Encryption and Decryption of TP-Link Smart Home Protocol
 # XOR Autokey Cipher with starting key = 171
+
+
 def encrypt(string):
     """Encrypt data to send to sockets"""
     key = 171
@@ -21,6 +23,7 @@ def encrypt(string):
         result += b'%c' % a
     return result
 
+
 def decrypt(string):
     """Decrypt data from sockets"""
     key = 171
@@ -30,6 +33,7 @@ def decrypt(string):
         key = i
         result += chr(a)
     return result
+
 
 class History():
 
@@ -111,6 +115,7 @@ class History():
 
         return False
 
+
 class PowerSocketConnection():
     """Class for working with TPLINK sockets"""
 
@@ -152,7 +157,8 @@ class PowerSocketConnection():
         # Call this method several times in a row to turn
         # the socket off.
         self._strike_count -= 1
-        self.log.info("Strike count for '%s' is %d", self.name, self._strike_count)
+        self.log.info("Strike count for '%s' is %d",
+                      self.name, self._strike_count)
         if self._strike_count == 0:
             self.turn_off()
             self.reset_strike_count()
@@ -175,10 +181,9 @@ class PowerSocketConnection():
         else:
             state = 'Off'
         if self.have_energy:
-            return "Device '{}' {} {} Watts ({:0.2f}kWh today)".format(self.name,
-                                                                       state,
-                                                                       self.watts,
-                                                                       self.pm.kwh())
+            return "Device '{}' {} {} Watts " \
+                   "({:0.2f}kWh today)".format(self.name, state, self.watts,
+                                               self.pm.kwh())
         return "Device '{}' {}".format(self.name, state)
 
     def __repr__(self):
@@ -228,7 +233,8 @@ class PowerSocketConnection():
             return res
 
         except socket.error:
-            self.log.info('Cound not connect to host %s:9999 (%s)', self._host, self.name)
+            self.log.info('Cound not connect to host %s:9999 (%s)',
+                          self._host, self.name)
             return None
         except json.decoder.JSONDecodeError:
             self.log.info('Error deconding json')
@@ -265,7 +271,8 @@ class PowerSocketConnection():
         self.pm.name = self.name
         on = bool(res['relay_state'])
         if self.on is not None and on != self.on:
-            self.log.debug('Socket %s state changed externally from %s to %s', self.name, self.on, on)
+            self.log.debug('Socket %s state changed externally from %s to %s',
+                           self.name, self.on, on)
             self.external_change = True
         self.on = on
 
@@ -282,14 +289,12 @@ class PowerSocketConnection():
         if 'current' in res:
             current = res['current']
             voltage = res['voltage']
-            wh = res['total'] * 1000
         else:
             current = float(res['current_ma']) / 1000
             voltage = float(res['voltage_mv']) / 1000
-            wh = res['total_wh']
 
         self.watts = int(voltage * current)
-        self.pm.add_value(self.watts,stime)
+        self.pm.add_value(self.watts, stime)
         self._history.set_entry(stime, on, self.watts)
         if self._history.is_satisfied(runtime=10):
             if self._history.is_satisfied():
@@ -307,7 +312,8 @@ class PowerSocketConnection():
         if not self.have_energy:
             return
         today = time.localtime()
-        res = self._send_cmd('emeter', 'get_daystat', 'year', today.tm_year, 'month', today.tm_mon)
+        res = self._send_cmd('emeter', 'get_daystat', 'year', today.tm_year,
+                             'month', today.tm_mon)
         if not res:
             return
         for day in res['day_list']:
@@ -335,7 +341,8 @@ class PowerSocketConnection():
                                        month['year'],
                                        energy/1000))
 
-        res = self._send_cmd('emeter', 'get_daystat', 'year', today.tm_year, 'month', today.tm_mon)
+        res = self._send_cmd('emeter', 'get_daystat', 'year', today.tm_year,
+                             'month', today.tm_mon)
         if not res:
             return
         for day in res['day_list']:

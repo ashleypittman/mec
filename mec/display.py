@@ -4,7 +4,7 @@ import sys
 import logging
 
 try:
-    from PIL import Image,ImageDraw,ImageFont
+    from PIL import Image, ImageDraw, ImageFont
 except ModuleNotFoundError:
     pass
 
@@ -12,11 +12,12 @@ FONT_FILE = '/home/pi/bitmap-fonts/bitmap/terminus-font-4.39/ter-u14v.bdf'
 
 log = logging.getLogger('e-paper')
 
+
 class ePaper():
 
     def __init__(self, conf):
         if 'waveshare_path' in conf:
-             sys.path.append(conf['waveshare_path'])
+            sys.path.append(conf['waveshare_path'])
         try:
             self._wave = __import__('waveshare_epd.epd2in7')
         except ModuleNotFoundError:
@@ -38,7 +39,8 @@ class ePaper():
                 car = 'Unknown'
                 if sessions[zappi.sno]['se'].session._is_valid:
                     session = sessions[zappi.sno]['se'].session
-                    car = '{} ({:.0f}%)'.format(session.name, session.percent_charge())
+                    car = '{} ({:.0f}%)'.format(session.name,
+                                                session.percent_charge())
                 elif sessions[zappi.sno]['se'].session._is_valid is False:
                     car = 'Outlander'
                 if zappi.status == 'Hot':
@@ -71,19 +73,25 @@ class ePaper():
         grid_today = culm_values['Grid']
         if 'Generation' in state._values:
             text.append('{} {}'.format(gen, istate))
-        text.append('Days import/export: {:.1f} {:.1f}'.format(grid_today.kwh(), grid_today.nkwh()))
+        text.append('Days import/export: {:.1f} {:.1f}'.format(grid_today.kwh(),
+                                                               grid_today.nkwh()))
         for eddi in state.eddi_list():
             if eddi.charge_rate:
-                text.append('Temp {}:{} {} {:.1f}kW'.format(eddi.temp_1, eddi.temp_2, eddi.status, eddi.charge_rate/1000))
+                text.append('Temp {}:{} {} {:.1f}kW'.format(eddi.temp_1,
+                                                            eddi.temp_2,
+                                                            eddi.status,
+                                                            eddi.charge_rate/1000))
             else:
-                text.append('Temp {}:{} {}'.format(eddi.temp_1, eddi.temp_2, eddi.status))
+                text.append('Temp {}:{} {}'.format(eddi.temp_1,
+                                                   eddi.temp_2,
+                                                   eddi.status))
         if 'iBoost' in culm_values:
             iboost_today = culm_values['iBoost']
             if state._values['iBoost'] < 50:
                 text.append('Water is not heating {:.1f}kWh today'.format(iboost_today.kwh()))
             else:
                 text.append('Water {:.1f}kw {:.1f}kWh today'.format(state._values['iBoost'] / 1000,
-                                                                             iboost_today.kwh()))
+                                                                    iboost_today.kwh()))
         text.append('')
         for socket in sockets:
             if socket.name != 'Dehumidifier':
@@ -95,7 +103,9 @@ class ePaper():
             if socket._history.is_satisfied(runtime=5*60, power=10):
                 text.append('{} is satisfied'.format(socket.name))
             else:
-                text.append('{} {}, {:.1f} today'.format(socket.name, s_state, socket.todays_kwh()))
+                text.append('{} {}, {:.1f} today'.format(socket.name,
+                                                         s_state,
+                                                         socket.todays_kwh()))
         if 'Heating' in state._values:
             heating_value = state._values['Heating']
             if abs(heating_value) < 20:
@@ -123,20 +133,12 @@ class ePaper():
 
         page = Image.new('1', (epd.height, epd.width), 255)
         draw = ImageDraw.Draw(page)
-        lines = ['Connected, waiting...', 
-                'Generation 2kw, export 1kw',
-                'I: 12 E: 12 C: 12 HW: 12',
-                'State of charge: 80%, plenty o',
-                'Water heating, total 12kWh',
-                'Dehumidifier on'
-                'time']
-
-        l = 0
+        lno = 0
         for line in self._to_show:
             draw.text((top_gap,
-                      (l* (self.font_size + line_gap)) + top_gap),
-                      line, font = self.font, fill = 0)
-            l += 1
+                      (lno * (self.font_size + line_gap)) + top_gap),
+                      line, font=self.font, fill=0)
+            lno += 1
         epd.display(epd.getbuffer(page))
-        self._showing = self._to_show 
+        self._showing = self._to_show
         epd.sleep()

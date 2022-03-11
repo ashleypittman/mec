@@ -6,6 +6,7 @@ import time
 
 import logging
 
+
 class PowerMeter():
     """Power meter for working out consumed power over time"""
 
@@ -59,7 +60,8 @@ class PowerMeter():
     def reset_value(self, kwh=0):
         """Reset timer to zero"""
         new_value = kwh * (60*60*1000)
-        self.log.debug("Resetting '%s' to %.3f %s", self.name, new_value / (60*60*1000), str(self))
+        self.log.debug("Resetting '%s' to %.3f %s",
+                       self.name, new_value / (60*60*1000), str(self))
         self.value = new_value
         self.neg_value = 0
         self._have_data = False
