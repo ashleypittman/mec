@@ -9,10 +9,11 @@ import time
 
 # Thanks to https://developer.octopus.energy/docs/api/#
 
-BASE_URL='https://api.octopus.energy'
-PRODUCT_CODE='AGILE-18-02-21'
+BASE_URL = 'https://api.octopus.energy'
+PRODUCT_CODE = 'AGILE-18-02-21'
 
 log = logging.getLogger('agile')
+
 
 @total_ordering
 class AgileSlot ():
@@ -35,7 +36,10 @@ class AgileSlot ():
 
     def __str__(self):
         st = self.start_time
-        return '{:6.2f}p {:02d}:{:02d}'.format(self.price, st.tm_hour, st.tm_min)
+        return '{:6.2f}p {:02d}:{:02d}'.format(self.price,
+                                               st.tm_hour,
+                                               st.tm_min)
+
 
 class AgileRange():
     # A range of multiple, contiguous agile timeslots.
@@ -66,7 +70,7 @@ class AgileRange():
             return True
 
         return False
-    
+
     def duration(self):
         # Return the duration of the range, in minutes.
         # TODO: write a unit test for this function.
@@ -92,6 +96,7 @@ class AgileRange():
                                                        end.tm_min,
                                                        self.duration())
 
+
 def get_current_data(conf):
     # Return an array of all future timeslots, including the
     # current one.
@@ -105,10 +110,9 @@ def get_current_data(conf):
     except KeyError:
         region = 'F'
 
-    tarrif_code='E-1R-{}-{}'.format(PRODUCT_CODE, region)
-    data_url='{}/v1/products/{}/electricity-tariffs/{}/standard-unit-rates'.format(BASE_URL,
-                                                                                   PRODUCT_CODE,
-                                                                                   tarrif_code)
+    tarrif_code = 'E-1R-{}-{}'.format(PRODUCT_CODE, region)
+    data_url = '{}/v1/products/{}/electricity-tariffs/{}/' \
+        'standard-unit-rates'.format(BASE_URL, PRODUCT_CODE, tarrif_code)
 
     done = False
     while not done:
@@ -123,6 +127,7 @@ def get_current_data(conf):
                 done = True
                 break
     return list(reversed(all_future_data))
+
 
 def get_slots_until_time(conf, hour):
     # Return all timeslots from now, until the specified
@@ -145,12 +150,13 @@ def get_slots_until_time(conf, hour):
 
     return sorted(slots, key=lambda z: z.price)
 
+
 class TimeWindows():
     # Manage a bound number of time windows, or AgileRanges.
 
     def __init__(self, window_count):
-       self.window_count = window_count
-       self.ranges = []
+        self.window_count = window_count
+        self.ranges = []
 
     def try_add(self, slot):
         # Try to add a timeslot to an existing range, or create
@@ -196,11 +202,13 @@ class TimeWindows():
             price += slot.price / 2
         return price
 
+
 def pick_slots(conf, end_hour, count, windows):
     # Pick a number of Time slots.
     # count is the number of time slots that are required
     # windows is how many boost settings there are.
-    log.debug('Looking for %d slots by %d in %d windows', count, end_hour, windows)
+    log.debug('Looking for %d slots by %d in %d windows',
+              count, end_hour, windows)
     slots = get_slots_until_time(conf, end_hour)
 
     # This is fairly simple, and could be persuaded to fail by
@@ -215,12 +223,12 @@ def pick_slots(conf, end_hour, count, windows):
     tw = TimeWindows(windows)
     added = 0
     while slots and added != count:
-       for slot in slots:
-           if tw.try_add(slot):
-               log.debug('Added %s', slot)
-               slots.remove(slot)
-               added += 1
-               break
+        for slot in slots:
+            if tw.try_add(slot):
+                log.debug('Added %s', slot)
+                slots.remove(slot)
+                added += 1
+                break
 
     if added != count:
         log.info('Wanted %d slots but only found %d', count, added)
@@ -228,6 +236,7 @@ def pick_slots(conf, end_hour, count, windows):
     for slot in tw.ranges:
         log.debug('slot is %s', slot)
     return tw
+
 
 if __name__ == '__main__':
     # Before ten AM pick seven slots in four windows.
