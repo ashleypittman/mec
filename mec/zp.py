@@ -222,7 +222,6 @@ class Eddi(MyEnergiDiverter):
         # Boost time left, in seconds.
         self.remaining_boost_time = self._glimpse_safe(data, 'rbt')
 
-
         self.temp_1 = self._glimpse(data, 'tp1')
         self.temp_2 = self._glimpse(data, 'tp2')
 
@@ -235,6 +234,21 @@ class Eddi(MyEnergiDiverter):
 
         self.relay_1_boost_type = EBT[self._glimpse(data, 'r1b')]
         self.relay_2_boost_type = EBT[self._glimpse(data, 'r2b')]
+
+    def report(self, rep=None):
+        if not rep:
+            rep = ReportCapture()
+        rep.log('Eddi status:')
+        rep.log('Status is {}'.format(self.status))
+        if self.status == 'Boost':
+            rep.log('Boost time remaining: {}'.format(self.remaining_boost_time))
+        rep.log('Temp of heater 1: {}'.format(self.temp_1))
+        rep.log('Temp of heater 2: {}'.format(self.temp_2))
+        rep.log('Heater active: {}'.format(self.heater_number))
+        if self.charge_rate:
+            rep.log('Heating at {}'.format(power_format(self.charge_rate)))
+        return rep.get_log()
+
 
 class Zappi(MyEnergiDiverter):
     """A Zappi class"""
@@ -576,10 +590,11 @@ class MyEnergiHost:
             if 'status' in data:
                 status = int(data['status'])
                 data['status'] = status
-                if -status in E_CODES and data['statustext'] == '':
+                if -status in E_CODES and data['statustext'] == '' and -status != 0:
                     data['statustext'] = E_CODES[-status]
                     log.debug('request failed %s', suffix)
                     log.debug('Error code is %s', E_CODES[-status])
+                    raise DataTimeout
             return data
         except socket.timeout:
             raise DataTimeout
@@ -624,9 +639,17 @@ class MyEnergiHost:
         res = self._load(suffix='cgi-set-min-green-Z{}-{}'.format(zid, level))
         log.debug(res)
 
+    def start_boost(self, sno, heater, duration):
+        ret = self._load(suffix='cgi-eddi-boost-E{}-10-{}-{}'.format(sno, heater, duration))
+        print(ret)
+
+    def stop_eddi_boost(self, sno, heater):
+        print("Stopping Eddi boost")
+        ret = self._load(suffix='cgi-eddi-boost-E{}-1-{}-0'.format(sno, heater))
+        print(ret)
+
     def _sno_to_key(self, sno):
         """Return the API key for sno"""
-        target = None
 
         for dev in self.state.eddi_list():
             if dev.sno == sno:
@@ -661,7 +684,7 @@ class MyEnergiHost:
                 if val == '1':
                     boost_days.append(calendar.day_name[dow])
 
-            if boost_days:
+            if boost_days and (instance['bdh'] != 0 or instance['bdm'] != 0):
                 # Convert from start time + duration to start time + end time.
                 start_time = datetime.datetime(year=1977, month=1, day=1,
                                                hour=instance['bsh'],
@@ -669,10 +692,20 @@ class MyEnergiHost:
                 duration = datetime.timedelta(hours=instance['bdh'],
                                               minutes=instance['bdm'])
                 end_time = start_time + duration
-                if duration.seconds != 0:
-                     print('Start {} End {} (duration {:02d}:{:02d}) days {}'.format(
-                        start_time.strftime('%H:%M'), end_time.strftime('%H:%M'),
-                        instance['bdh'], instance['bdm'], ','.join(boost_days)))
+                slt = str(instance['slt'])
+                btype = slt[0]
+                if btype == '1':
+                    print('Heater 1')
+                elif btype == '2':
+                    print('Heater 2')
+                elif btype == '5':
+                    print('Relay 1')
+                elif btype == '6':
+                    print('Relay 2')
+                print('Start {} End {} (duration {:02d}:{:02d}) days {}'.format(
+                    start_time.strftime('%H:%M'), end_time.strftime('%H:%M'),
+                    instance['bdh'], instance['bdm'], ','.join(boost_days)))
+
             del instance['bsh']
             del instance['bsm']
             del instance['bdh']

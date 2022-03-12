@@ -20,6 +20,7 @@ import mec.display
 import mec.zp
 import mec.power_meter
 import mec.session
+import mec.eddi_boost
 
 RC_FILE = '~/.zappirc'
 
@@ -201,6 +202,9 @@ class LoopFns():
         self.display = display
         self.sessions = {}
         self.auto_eco = set()
+        self.eddi_on_time = datetime.datetime(year=1977, month=1, day=1, hour=3, minute=30)
+        self.eddi_duration = datetime.timedelta(hours=1)
+        self._eb = mec.eddi_boost.EddiBoost(self.server_conn)
 
     def resample(self):
         """Resample all data"""
@@ -220,7 +224,11 @@ class LoopFns():
 
         self._check_and_set_timers()
 
+        self._check_eddi_boost()
+
         self._reset_mode_if_idle()
+
+        self._set_eddi_prio()
 
         self._new_power_divert()
 
@@ -238,6 +246,31 @@ class LoopFns():
             return False
         return True
 
+    def _set_eddi_prio(self):
+        """Change the Eddi heater priority settings
+
+        If the Eddi is heating on the lower priority heater than even though
+        the primary may be above temp the Eddi will periodically switch back
+        to the primary for a number of seconds.  To avoid this change the
+        priority so that the Eddi is always heating only the primary
+        """
+
+        state = self.server_conn.state
+        for eddi in state.eddi_list(priority_order=True):
+            desired_heater = None
+            if eddi.heater_priority == 1:
+                if eddi.temp_1 > 50:
+                    desired_heater = 2
+            else:
+                if eddi.temp_1 < 45:
+                    desired_heater = 1
+            if desired_heater is None:
+                continue
+            self.log.info('Setting heater to {}, temps {}:{}'.format(desired_heater,
+                                                                     eddi.temp_1,
+                                                                     eddi.temp_2))
+            self.server_conn.set_heater_priority(desired_heater, eddi.sno)
+
     def _check_and_set_timers(self):
 
         now = time.gmtime()
@@ -253,6 +286,14 @@ class LoopFns():
                 socket.turn_on()
                 self.log.info('Turned on {} from timer'.format(socket.name))
                 socket.mode = 'timed'
+
+    def _check_eddi_boost(self):
+
+        eddi = self.server_conn.state.eddi_list()[0]
+
+        now = time.gmtime()
+        itw = self.in_time_window(now, self.eddi_on_time, self.eddi_duration)
+        self._eb.run(eddi, itw)
 
     def _try_update_sm(self):
         state = self.server_conn.state
@@ -297,11 +338,15 @@ class LoopFns():
         for socket in self.sockets:
             if socket.mode != 'auto':
                 continue
-            self.log.debug('considering socket %s %s %s %s', socket.name, socket.external_change, socket.on, socket.on_time)
-            if (socket.external_change and socket.on) or socket.on_time:
-                devices.append(socket)
-            else:
-                sockets.append(socket)
+            self.log.debug('considering socket %s %s %s %s',
+                           socket.name,
+                           socket.external_change,
+                           socket.on,
+                           socket.on_time)
+#            if (socket.external_change and socket.on) or socket.on_time:
+#                devices.append(socket)
+#            else:
+            sockets.append(socket)
         state = self.server_conn.state
         available_power = state._values.get('Generation', 0)
         available_power -= state._values['House']
@@ -317,6 +362,10 @@ class LoopFns():
                 devices.append(zappi)
             if zappi.mode == 'Fast':
                 available_power -= zappi.charge_rate
+
+        hot_water_temp = 10
+        for eddi in state.eddi_list():
+            hot_water_temp = eddi.temp_2
         if car_first:
             devices.append('iBoost')
         devices.extend(sockets)
@@ -327,6 +376,7 @@ class LoopFns():
         self.log.debug(state._values)
         self.log.debug('Available power is %d', available_power)
         self.log.debug('Auto eco is %s', self.auto_eco)
+        self.log.debug('Water temp is %d', hot_water_temp)
         self.log.debug(devices)
         fast_off = False
         first_device = True
@@ -349,12 +399,16 @@ class LoopFns():
                 # over time this should turn off any sockets preventing this.
 
                 if zappi.sno in self.auto_eco:
-                    if 'iBoost' in state._values:
+                    if 'iBoost' in state._values and state._values['iBoost'] > 100:
                         # TODO: This value needs checking.
                         if (available_power + state._values['iBoost'] + zappi.charge_rate) < 1500:
-                            self.log.info('Setting Zappi to eco+ %s avail: %d iBoost: %d rate: %d', zappi.sno, available_power, state._values['iBoost'], zappi.charge_rate)
+                            self.log.info('Setting Zappi to eco+ %s avail: %d iBoost: %d rate: %d',
+                                          zappi.sno,
+                                          available_power,
+                                          state._values['iBoost'],
+                                          zappi.charge_rate)
                             self.server_conn.set_mode_ecop(zappi.sno)
-                            #self.auto_eco.remove(zappi.sno)
+                            # self.auto_eco.remove(zappi.sno)
                     else:
                         # If there isn't hot water because of import then turn off car.
                         if available_power < zappi.min_charge_rate_with_level():
@@ -378,13 +432,18 @@ class LoopFns():
                 # if it is currently consuming anything
                 if can_auto_eco and available_power > 2000:
                     set_eco = True
+
                 if state._values['iBoost'] > 50:
-                    if car_first:
-                        available_power -= 2000
+                    if hot_water_temp < 50:
+                        available_power -= state._values['iBoost']
+
                     else:
-#                        available_power -= state._values['iBoost']
-                        # This should ideally be in amps.
-                        available_power -= 2000
+                        if car_first:
+                            available_power -= 2000
+                        else:
+                            # available_power -= state._values['iBoost']
+                            # This should ideally be in amps.
+                            available_power -= 2000
                 continue
             if device.on:
                 if available_power > device.watts:
