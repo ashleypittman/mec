@@ -16,6 +16,8 @@ class SessionManager():
         self.session = None
         self._known_charge_added = 0
         self._pm = None
+        self._have_stopped = False
+        self._requested_stop = False
 
     def update_state(self, state, zappi, have_car):
         """Update the session state from the current Zappi state."""
@@ -44,6 +46,9 @@ class SessionManager():
         self._pm.add_value(zappi.charge_rate, zappi.time)
         self.session.update(self._pm.kwh())
         self._known_charge_added = zappi.charge_added
+        if self._requested_stop and zappi.mode == 'Stop':
+            self._have_stopped = True
+            self._requested_stop = False
 
     def should_health_charge(self):
         """Returns true if battery low"""
@@ -55,7 +60,12 @@ class SessionManager():
         """Returns true if desireable SOC achieved"""
         if not self.session:
             return False
-        return self.session.should_stop_charge()
+        if self._have_stopped:
+            return False
+        if self._requested_stop:
+            return True
+        self._requested_stop = self.session.should_stop_charge()
+        return self._requested_stop
 
     def request_update(self):
         if not self.session:
