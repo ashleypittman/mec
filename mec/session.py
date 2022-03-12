@@ -4,9 +4,11 @@
 
 import sys
 import time
+import math
 import logging
 
 import mec.power_meter
+
 
 class SessionManager():
     """Session manager"""
@@ -37,7 +39,7 @@ class SessionManager():
             if end_session:
                 self.session = None
         if self.session is None and zappi.car_connected():
-            self.session = self._se.new_session(have_car = have_car)
+            self.session = self._se.new_session(have_car=have_car)
             self._known_charge_added = zappi.charge_added
             self._pm = mec.power_meter.PowerMeter()
 
@@ -72,6 +74,7 @@ class SessionManager():
             return
         if hasattr(self.session, 'request_update'):
             self.session.request_update()
+
 
 class SessionEngine():
     """Metaclass for creating the right kind of session"""
@@ -111,6 +114,7 @@ class SessionEngine():
         else:
             return NullSession()
 
+
 class NullSession():
 
     """No-op session for when pycarwings2 not available"""
@@ -126,6 +130,7 @@ class NullSession():
     def should_stop_charge(self):
         """Does not need to stop charge"""
         return False
+
 
 class CommonSession():
 
@@ -188,6 +193,7 @@ class CommonSession():
             return False
 
         return self._soc_kwh and self._soc_kwh > ((self.capacity * self.high_capacity) / 100)
+
 
 class TeslaSession(CommonSession):
 
@@ -258,6 +264,7 @@ class TeslaSession(CommonSession):
             self.log.info('Total charge added %.2f', kwh)
             self.log.info('Total charge held %.2f', self._soc_kwh)
             self.log.info('SOC percentage %.0f', self.percent_charge())
+
 
 class LeafSession(CommonSession):
     """Session counter"""
@@ -385,6 +392,7 @@ class LeafSession(CommonSession):
             self.log.info('Total charge held %.2f', self._soc_kwh)
             self.log.info('SOC percentage %.0f', self.percent_charge())
 
+
 class jlrSession(CommonSession):
     """Session counter"""
 
@@ -425,7 +433,7 @@ class jlrSession(CommonSession):
             p = self._jlr.get_position()
             position = (p['position']['latitude'], p['position']['longitude'])
             home = (float(self.home_latitude), float(self.home_longitude))
-            d = int(1000*distance(home,position))
+            d = int(1000 * distance(home, position))
             if (d > 100):
                 self.log.info("car is not at home : "+str(d)+"m from normal location")
                 at_home = False
@@ -434,18 +442,17 @@ class jlrSession(CommonSession):
         except:
             self.log.info('cant connect to car right now')
             return
-        status = { d['key'] : d['value'] for d in vehicleStatus['evStatus'] }
+        status = {d['key']: d['value'] for d in vehicleStatus['evStatus']}
         charging_status = status('EV_CHARGING_STATUS')
         current_soc = status('EV_STATE_OF_CHARGE')
         self.log.info("current SoC is "+str(current_soc)+"%")
 
-        if (status('EV_CHARGING_METHOD')  == "WIRED" and at_home == True):
+        if (status('EV_CHARGING_METHOD') == "WIRED" and at_home):
             self.log.info("car is at home and charging status is "+str(charging_status))
         else:
             self.log.info("car is not plugged in or not at home")
             return
         return current_soc
-
 
     def _do_refresh(self):
 

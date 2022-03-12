@@ -5,6 +5,7 @@
 import run_zappi
 import mec.zp
 
+
 def main():
     """Main"""
 
@@ -18,6 +19,7 @@ def main():
         server_conn.get_boost(zappi.sno)
 
         # server_conn.stop_boost(zappi.sno)
+
 
 if __name__ == '__main__':
     main()

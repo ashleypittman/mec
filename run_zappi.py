@@ -28,6 +28,7 @@ DELAY = 60
 
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
 
+
 def setup_logging(debug):
     """Configure global logging state"""
 
@@ -55,14 +56,17 @@ def setup_logging(debug):
     channel.setFormatter(oformat)
     root.addHandler(channel)
 
+
 # Get logging handle for this file.
 log = logging.getLogger('run_zappi')
+
 
 def load_config(debug=True):
     """Load the config file and return dict"""
     setup_logging(debug)
     ofh = open(os.path.expanduser(RC_FILE), 'r')
     return yaml.safe_load(ofh)
+
 
 def main():
     """Main"""
@@ -120,6 +124,7 @@ def main():
                 socket.turn_off()
         raise
 
+
 def show_zappi_data(config, server_conn, sockets):
     """Show the current state and return"""
     for socket in sockets:
@@ -145,6 +150,7 @@ def show_zappi_data(config, server_conn, sockets):
         print(line)
     for (key, value, _) in state.get_readings():
         print("'{}' is {}".format(key, value))
+
 
 def get_graph(state, sockets):
     """Return a ascii graph of the current consumption"""
@@ -476,6 +482,7 @@ class LoopFns():
                 self.auto_eco.add(zappi.sno)
                 break
 
+
 def run_loop(server_conn, sockets, session_engine, display):
     """Run in a loop"""
     start_time = time.time()
@@ -540,6 +547,7 @@ def run_loop(server_conn, sockets, session_engine, display):
             if delay > 0:
                 break
         time.sleep(delay)
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == 'start':

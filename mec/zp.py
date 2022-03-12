@@ -23,7 +23,8 @@ PSTATUSES = {'A': 'Disconnected',
 
 # Eddi Boost Types.
 EBT = ['Not boostable', 'Boiler', 'Heat Pump', 'Battery']
-ESTATUSES = ['?', 'Waiting for surplus', 'Paused', 'Diverting', 'Boost', 'Max Temp Reached', 'Stopped']
+ESTATUSES = ['?', 'Waiting for surplus', 'Paused', 'Diverting',
+             'Boost', 'Max Temp Reached', 'Stopped']
 
 E_CODES = {0: 'OK',
            1: 'Invalid ID',
@@ -54,8 +55,10 @@ E_CODES = {0: 'OK',
            26: 'Busy – Server is already sending a command to the device',
            27: 'Relay not fitted'}
 
+
 log = logging.getLogger('myenergi')
 pp = pprint.PrettyPrinter()
+
 
 def power_format(watts):
     """Return a string represention of watts"""
@@ -63,17 +66,22 @@ def power_format(watts):
         return '{}w'.format(watts)
     return '{:.3f}kW'.format(watts/1000)
 
+
 class DataException(Exception):
     """General exception class"""
+
 
 class DataBogus(DataException):
     """Bogus/invalid data from server"""
 
+
 class DataTimeout(DataException):
     """Timeout from server"""
 
+
 class HostChanged(DataException):
     """Server host has changed."""
+
 
 class ReportCapture:
     """Class for concatenating log strings"""
@@ -92,6 +100,7 @@ class ReportCapture:
 
     def __str__(self):
         return self.get_log()
+
 
 class MyEnergiDevice:
 
@@ -115,7 +124,7 @@ class MyEnergiDevice:
             # These are present in Harvi data for some reason.
             ct_phase = self._glimpse_safe(data, 'ect{}p'.format(ct))
             ct_name_key = 'ectt{}'.format(ct)
-            if ct_phase not in {1,0}:
+            if ct_phase not in {1, 0}:
                 log.debug('CT %s is on phase %d', ct_name_key, ct_phase)
             if ct_name_key not in data:
                 break
@@ -134,15 +143,15 @@ class MyEnergiDevice:
                 else:
                     self._values[ct_name] = value
             else:
-                if not 'Grid' in self._values:
-                    self._values['Grid'] = value # only take the first grid value for non-netting 3 phase
+                if 'Grid' not in self._values:
+                    # only take the first grid value for non-netting 3 phase
+                    self._values['Grid'] = value
                 else:
-                    if 'net_phases' in house_data:
-                        if house_data['net_phases'] == True:
+                    if 'net_phases' in house_data and house_data['net_phases']:
                         # 3 phase all report with same name "grid" so need to sum them
                         # note this produces a net import/export number.
                         # if phases are not netted Zappi assumes export monitoring on phase 1
-                            self._values['Grid'] = self._values['Grid'] + value
+                        self._values['Grid'] = self._values['Grid'] + value
         log.debug(self._values)
 
     def _glimpse_safe(self, data, key):
@@ -173,6 +182,7 @@ class MyEnergiDevice:
         # is not known, so reply None for the amps.
         return (self._values[key], None)
 
+
 class MyEnergiDiverter(MyEnergiDevice):
     """A Myenergi diverter device"""
 
@@ -202,6 +212,7 @@ class MyEnergiDiverter(MyEnergiDevice):
         self.cmt = self._glimpse_safe(data, 'cmt')
         if self.cmt != 254:
             log.debug('cmt is %d', self.cmt)
+
 
 class Eddi(MyEnergiDiverter):
     """A Eddi class"""
@@ -314,13 +325,14 @@ class Zappi(MyEnergiDiverter):
         rep.log(self.zname+' mode is {}'.format(self.mode))
         # The min charge level is often given as 1.4kw however it needs to take into
         # account voltage.
-        rep.log('Min Green level is {}% ({})'.format(self.min_green_level,
-                                                     power_format(self.min_charge_rate_with_level())))
+        pf = power_format(self.min_charge_rate_with_level())
+        rep.log('Min Green level is {}% ({})'.format(self.min_green_level, pf))
 
         rep.log('Car status is {}'.format(self.status))
         (charge_watts, charge_amps) = self.get_values('Zappi')
         if charge_watts:
-            rep.log('Car is charging at {} ({:.1f} amps)'.format(power_format(charge_watts), charge_amps))
+            rep.log('Car is charging at {} ({:.1f} amps)'.format(power_format(charge_watts),
+                                                                 charge_amps))
         if self.charge_added:
             rep.log('Car charge added {}kWh'.format(self.charge_added))
         rep.log('Plug status is {}'.format(self.pstatus))
@@ -339,12 +351,14 @@ class Zappi(MyEnergiDiverter):
         """Return a tuple of (watts, amps) for a given device"""
         return (self._values[key], self._values[key] / self.voltage)
 
+
 class Harvi(MyEnergiDevice):
     """A Harvi device"""
 
 # Nothing to do here, disable it.
 #    def __init__(self, data):
 #        super().__init__(data)
+
 
 class MyEnergi:
     """Class representing data returned"""
@@ -485,8 +499,7 @@ class MyEnergi:
         rep.log('House is using {}'.format(power_format(house_use)))
         if sockets_total:
             rep.log('Sockets are using {}'.format(power_format(sockets_total)))
-        #(iboost_watts, iboost_amps) = self._values('iBoost')
-        #rep.log('iBoost is using {} ({:.1f} amps)'.format(power_format(iboost_watts), iboost_amps))
+        # (iboost_watts, iboost_amps) = self._values('iBoost')
         if 'iBoost' in self._values:
             iboost_watts = self._values['iBoost']
             rep.log('iBoost is using {}'.format(power_format(iboost_watts)))
@@ -500,7 +513,9 @@ class MyEnergi:
 
         return str(rep)
 
-ASN='X_MYENERGI-asn'
+
+ASN = 'X_MYENERGI-asn'
+
 
 class MyEnergiHost:
     """Class for downloading data"""
@@ -508,7 +523,7 @@ class MyEnergiHost:
     def __init__(self, username, password, house_conf={}):
         self.__username = str(username)
         self.__password = password
-        #self.__host = 'director.myenergi.net'
+        # self.__host = 'director.myenergi.net'
         self.__host = 's18.myenergi.net'
         self.state = None
         self._house_conf = house_conf
@@ -517,7 +532,6 @@ class MyEnergiHost:
         # Check the returned headers to check if a different host
         # should be used, see
         # https://myenergi.info/update-to-active-server-redirects-t2980.html
-
 
         if ASN not in headers:
             return
@@ -778,12 +792,12 @@ class MyEnergiHost:
 
         if True:
             res = self._load(suffix='cgi-jday-Z{}-{}-{}-{}-{}-{}-{}'.format(zid,
-                                                                   day.tm_year,
-                                                                   day.tm_mon,
-                                                                   day.tm_mday,
-                                                                   sh,
-                                                                   sm,
-                                                                   mc))
+                                                                            day.tm_year,
+                                                                            day.tm_mon,
+                                                                            day.tm_mday,
+                                                                            sh,
+                                                                            sm,
+                                                                            mc))
         else:
             res = self._load(suffix='cgi-jday-Z{}-{}-{}-{}'.format(zid,
                                                                    day.tm_year,
