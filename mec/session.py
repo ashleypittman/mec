@@ -151,6 +151,8 @@ class CommonSession():
         print(self.high_capacity)
         self.check_connected = True
         self._soc_kwh = None
+        self._base_kwh = None
+        self._initial_percent = None
         self._refresh = False
         self._refresh_time = None
         self._is_valid = None
@@ -214,11 +216,11 @@ class TeslaSession(CommonSession):
 
     def _get_soc(self):
         if not self._mt:
-            return
+            return None
         raw = self._mt.charge_state()
         self.log.debug(raw)
         if 'error' in raw:
-            return
+            return None
         self._is_valid = True
         return raw['response']['battery_level']
 
@@ -429,12 +431,12 @@ class jlrSession(CommonSession):
 
     def _fetch_latest(self, kwh, start_time):
         at_home = True
-        if (self.home_latitude != 0.0 and self.home_longitude != 0.0):
+        if self.home_latitude != 0.0 and self.home_longitude != 0.0:
             p = self._jlr.get_position()
             position = (p['position']['latitude'], p['position']['longitude'])
             home = (float(self.home_latitude), float(self.home_longitude))
             d = int(1000 * distance(home, position))
-            if (d > 100):
+            if d > 100:
                 self.log.info("car is not at home : "+str(d)+"m from normal location")
                 at_home = False
         try:

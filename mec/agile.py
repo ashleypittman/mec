@@ -109,6 +109,8 @@ def get_current_data(conf):
         region = conf['agile']['region']
     except KeyError:
         region = 'F'
+    except TypeError:
+        region = 'F'
 
     tarrif_code = 'E-1R-{}-{}'.format(PRODUCT_CODE, region)
     data_url = '{}/v1/products/{}/electricity-tariffs/{}/' \
@@ -116,9 +118,8 @@ def get_current_data(conf):
 
     done = False
     while not done:
-        raw = urllib.request.urlopen(data_url)
-
-        data = json.load(raw)
+        with urllib.request.urlopen(data_url) as raw:
+            data = json.load(raw)
         data_url = data['next']
         for row in data['results']:
             n = AgileSlot(row)

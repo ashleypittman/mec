@@ -45,7 +45,7 @@ def main():
             return
         se.check_connected = False
         se.update(0)
-        while (se._is_valid is None):
+        while se._is_valid is None:
             # The Leaf API only updates every 20 seconds, so wait a little bit
             # more than that, and re-sample.
             time.sleep(21)
@@ -98,7 +98,8 @@ def main():
     server_conn.refresh()
 
     for zappi in server_conn.state.zappi_list():
-        if args.sno == 0 or args.sno == zappi.sno:
+        if args.sno in (0, zappi.sno):
+
             print('Zappi is currently in mode {}'.format(zappi.mode))
 
             SIDS = [11, 12, 13, 14]

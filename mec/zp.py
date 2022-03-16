@@ -417,16 +417,14 @@ class MyEnergi:
 
         if priority_order:
             return sorted(self._zappis, key=lambda d: d.priority)
-        else:
-            return sorted(self._zappis, key=lambda d: d.sno)
+        return sorted(self._zappis, key=lambda d: d.sno)
 
     def eddi_list(self, priority_order=False):
         # Return a constant-order Eddi list.
 
         if priority_order:
             return sorted(self._eddis, key=lambda d: d.priority)
-        else:
-            return sorted(self._eddis, key=lambda d: d.sno)
+        return sorted(self._eddis, key=lambda d: d.sno)
 
     def _check_device_value(self, val, vname):
 
@@ -539,7 +537,7 @@ class MyEnergiHost:
             return
         if headers[ASN] == 'undefined':
             return
-        log.debug('Changing host to {}'.format(headers[ASN]))
+        log.debug('Changing host to %s', headers[ASN])
         self.__host = headers[ASN]
         raise HostChanged
 
@@ -744,7 +742,7 @@ class MyEnergiHost:
             bdd = ''.join(bdd)
         elif not bdd:
             bdd = '00000000'
-        if (bdh >= 8):
+        if bdh >= 8:
             log.info('Max 8 hours per slot')
             bdh = 8
             bdm = 0
@@ -788,21 +786,14 @@ class MyEnergiHost:
         sh = 0
         sm = 0
         mc = 1440
-#        mc = 50
 
-        if True:
-            res = self._load(suffix='cgi-jday-Z{}-{}-{}-{}-{}-{}-{}'.format(zid,
-                                                                            day.tm_year,
-                                                                            day.tm_mon,
-                                                                            day.tm_mday,
-                                                                            sh,
-                                                                            sm,
-                                                                            mc))
-        else:
-            res = self._load(suffix='cgi-jday-Z{}-{}-{}-{}'.format(zid,
-                                                                   day.tm_year,
-                                                                   day.tm_mon,
-                                                                   day.tm_mday))
+        res = self._load(suffix='cgi-jday-Z{}-{}-{}-{}-{}-{}-{}'.format(zid,
+                                                                        day.tm_year,
+                                                                        day.tm_mon,
+                                                                        day.tm_mday,
+                                                                        sh,
+                                                                        sm,
+                                                                        mc))
         key = 'U{}'.format(zid)
         if key in res:
             return res[key]

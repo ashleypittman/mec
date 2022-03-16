@@ -6,11 +6,11 @@ import os.path
 import time
 import sys
 import logging
-import daemon
-import resource
 import logging.handlers
+import resource
 import datetime
 from collections import OrderedDict
+import daemon
 import yaml
 from ascii_graph import Pyasciigraph
 
@@ -64,8 +64,8 @@ log = logging.getLogger('run_zappi')
 def load_config(debug=True):
     """Load the config file and return dict"""
     setup_logging(debug)
-    ofh = open(os.path.expanduser(RC_FILE), 'r')
-    return yaml.safe_load(ofh)
+    with open(os.path.expanduser(RC_FILE), 'r') as ofh:
+        return yaml.safe_load(ofh)
 
 
 def main():
@@ -100,7 +100,7 @@ def main():
     try:
         if len(sys.argv) == 2:
             if sys.argv[1] == 'once':
-                show_zappi_data(config, server_conn, sockets)
+                show_zappi_data(server_conn, sockets)
                 return
         log.debug('Starting server')
         session_engine = mec.session.SessionEngine(config)
@@ -125,7 +125,7 @@ def main():
         raise
 
 
-def show_zappi_data(config, server_conn, sockets):
+def show_zappi_data(server_conn, sockets):
     """Show the current state and return"""
     for socket in sockets:
         socket.get_data()
@@ -243,7 +243,7 @@ class LoopFns():
     def in_time_window(self, now, start, duration):
         if now.tm_hour < start.hour:
             return False
-        elif now.tm_hour == start.hour and now.tm_min < start.minute:
+        if now.tm_hour == start.hour and now.tm_min < start.minute:
             return False
         end_time = start + duration
         if now.tm_hour > end_time.hour:
@@ -439,7 +439,7 @@ class LoopFns():
                         # Give some headway for the car to charge faster.
                         available_power -= 250
                 continue
-            elif device == 'iBoost':
+            if device == 'iBoost':
                 # The iBoost may be satisified so only attribute power to it
                 # if it is currently consuming anything
                 if can_auto_eco and available_power > 2000:
