@@ -134,6 +134,7 @@ class PowerSocketConnection():
         self._power = 0
         self._history = History()
         self.external_change = False
+        self.ec_time = 0
         self.on_time = None
         self.duration = 2
         self.pm = mec.power_meter.PowerMeter()
@@ -252,7 +253,7 @@ class PowerSocketConnection():
     def turn_on(self):
         """Turn on socket"""
         self.log.debug("Turning on '%s'", self.name)
-        self.exernal_change = False
+        self.external_change = False
         res = self._send_cmd('system', 'set_relay_state', 'state', 1)
         if res:
             self.on = True
@@ -274,6 +275,7 @@ class PowerSocketConnection():
             self.log.debug('Socket %s state changed externally from %s to %s',
                            self.name, self.on, on)
             self.external_change = True
+            self.ec_time = time.time()
         self.on = on
 
         if res['feature'] != 'TIM:ENE':

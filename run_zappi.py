@@ -349,10 +349,16 @@ class LoopFns():
                            socket.external_change,
                            socket.on,
                            socket.on_time)
-#            if (socket.external_change and socket.on) or socket.on_time:
-#                devices.append(socket)
-#            else:
-            sockets.append(socket)
+            if (socket.external_change and socket.on) or socket.on_time:
+                now = time.time()
+                # If a socket was manually adjusted then leave it on for
+                # at least an hour.
+                if now - socket.ec_time > 60 * 60:
+                    devices.append(socket)
+                else:
+                    self.log.debug('Ignoring as not on long enough')
+            else:
+                sockets.append(socket)
         state = self.server_conn.state
         available_power = state._values.get('Generation', 0)
         available_power -= state._values['House']
