@@ -5,6 +5,7 @@
 import getopt
 import time
 import sys
+import json
 
 import tabulate
 
@@ -37,7 +38,13 @@ def main():
     """Main"""
     global show_headers
 
-    args = ['per-minute', 'totals', 'day=', 'month=', 'year=', 'show-month']
+    args = ['per-minute',
+            'totals',
+            'day=',
+            'month=',
+            'year=',
+            'show-month',
+            'json']
     try:
         opts, args = getopt.getopt(sys.argv[1:], '', args)
     except getopt.GetoptError:
@@ -47,6 +54,7 @@ def main():
 
     hourly = True
     totals = False
+    use_json = False
 
     today = time.localtime()
     day = Day(today.tm_year, today.tm_mon, today.tm_mday)
@@ -55,41 +63,67 @@ def main():
     for opt, value in opts:
         if opt == '--per-minute':
             hourly = False
-        if opt == '--totals':
+        elif opt == '--totals':
             totals = True
-        if opt == '--day':
+        elif opt == '--day':
             day.tm_mday = value
-        if opt == '--month':
+        elif opt == '--month':
             day.tm_mon = value
-        if opt == '--year':
+        elif opt == '--year':
             day.tm_year = value
-        if opt == '--show-month':
+        elif opt == '--show-month':
             show_month = True
+        elif opt == '--json':
+            use_json = True
 
     config = run_zappi.load_config(debug=False)
 
     server_conn = mec.zp.MyEnergiHost(config['username'], config['password'])
     server_conn.refresh()
 
+    jout = {}
+
     # The Zappi V2.
     for zappi in server_conn.state.zappi_list():
-        zid = zappi.sno
 
         show_headers = True
 
-        if show_month:
+        if use_json:
+            (header, _, totals) = load_day(server_conn,
+                                           zappi.sno,
+                                           day,
+                                           True,
+                                           True,
+                                           True)
+            raw = {}
+            for head in header:
+                if not totals[0] or head == 'Time':
+                    totals.pop(0)
+                    continue
+                raw[head] = totals.pop(0)
+            jout[zappi.sno] = raw
+
+        elif show_month:
             all_data = []
             for dom in range(1, day.tm_mday + 1):
                 print('Day {}'.format(dom))
                 day.tm_mday = dom
-                (headers, _, totals) = load_day(server_conn, zid, day, hourly, totals)
+                (headers, _, totals) = load_day(server_conn,
+                                                zappi.sno,
+                                                day,
+                                                hourly,
+                                                totals,
+                                                use_json)
                 all_data.append(totals)
             print(tabulate.tabulate(all_data, headers=headers))
         else:
-            load_day(server_conn, zid, day, hourly, totals)
+            load_day(server_conn, zappi.sno, day, hourly, totals, use_json)
+
+    if use_json:
+        print(json.dumps(jout, indent=4, sort_keys=True))
 
 
-def load_day(server_conn, zid, day, hourly, totals):
+def load_day(server_conn, zid, day, hourly, totals, use_json):
 
     global show_headers
 
@@ -161,19 +195,21 @@ def load_day(server_conn, zid, day, hourly, totals):
             print(rec)
         data.append(row)
     num_records = len(data)
-    print('There are {} records'.format(num_records))
+    if not use_json:
+        print('There are {} records'.format(num_records))
     if totals:
         data = []
     row = ['Totals', None]
     for key in headers:
-        row.append(pm_totals[key])
+        row.append(str(pm_totals[key]))
     data.append(row)
 
-    if show_headers:
-        print(tabulate.tabulate(data, headers=table_headers))
-        show_headers = False
-    else:
-        print(tabulate.tabulate(data))
+    if not use_json:
+        if show_headers:
+            print(tabulate.tabulate(data, headers=table_headers))
+            show_headers = False
+        else:
+            print(tabulate.tabulate(data))
     return (table_headers, data, row)
 
 
