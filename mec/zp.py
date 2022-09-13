@@ -193,7 +193,7 @@ class MyEnergiDiverter(MyEnergiDevice):
             self.voltage = voltage / 10
         else:
             self.voltage = voltage
-        self.frequency = self._glimpse(data, 'frq')
+        self.frequency = self._glimpse_safe(data, 'frq')
         log.debug('Voltage %f frequency %f', self.voltage, self.frequency)
         self.grid = self._glimpse_safe(data, 'grd')
         self.generation = self._glimpse_safe(data, 'gen')
