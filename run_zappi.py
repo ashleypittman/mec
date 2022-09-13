@@ -16,6 +16,7 @@ from ascii_graph import Pyasciigraph
 
 # Local imports.
 import mec.tpsockets
+import mec.shelly
 import mec.display
 import mec.zp
 import mec.power_meter
@@ -74,6 +75,13 @@ def main():
     config = load_config()
 
     sockets = []
+
+    if 'shelly' in config:
+        for shelly in config['shelly']:
+            obj = mec.shelly.PowerSocketConnection(shelly['ip'])
+            if 'mode' in shelly:
+                obj.mode = shelly['mode']
+            sockets.append(obj)
 
     if 'sockets' in config:
         for socket in config['sockets']:
@@ -208,8 +216,9 @@ class LoopFns():
         self.display = display
         self.sessions = {}
         self.auto_eco = set()
-        self.eddi_on_time = datetime.datetime(year=1977, month=1, day=1, hour=3, minute=30)
-        self.eddi_duration = datetime.timedelta(hours=1)
+        # This might be affected by BST, so is off-by-one over the summer.
+        self.eddi_on_time = datetime.datetime(year=1977, month=1, day=1, hour=1, minute=30)
+        self.eddi_duration = datetime.timedelta(hours=2)
         self._eb = mec.eddi_boost.EddiBoost(self.server_conn)
 
     def resample(self):

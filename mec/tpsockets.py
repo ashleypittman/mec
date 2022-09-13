@@ -172,10 +172,6 @@ class PowerSocketConnection():
         """Reset power for day"""
         self.pm.reset_value()
 
-    def set_mode(self, mode):
-        """Set the mode of the socket"""
-        self.mode = mode
-
     def __str__(self):
         if self.on:
             state = 'On'
