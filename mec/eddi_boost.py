@@ -10,17 +10,22 @@ class EddiBoost:
 
     def __init__(self, server_conn):
         self._sc = server_conn
-        self.desired_temp = 35
+        self.desired_temp = 40
         self._in_time_window = False
-        self._heater = 1
+        self._heater = 2
 
     def _stop_boost(self, eddi):
         self.log.info('Stopping boost')
         self._sc.stop_eddi_boost(eddi.sno, self._heater)
 
+    def _cur_temp(self, eddi):
+        if self._heater == 1:
+            return eddi.temp_1
+        return eddi.temp_2
+
     def _check_for_boost_start(self, eddi):
 
-        if eddi.temp_1 < self.desired_temp:
+        if self._cur_temp(eddi) < self.desired_temp:
             self.log.info('Starting boost')
             self._sc.start_boost(eddi.sno, self._heater, 60)
         else:
@@ -47,6 +52,6 @@ class EddiBoost:
         if eddi.status != 'Boost':
             return
 
-        if self.desired_temp < eddi.temp_1:
+        if self.desired_temp < self._cur_temp(eddi):
             self.log.info('Desired temp reached')
             self._stop_boost(eddi)
