@@ -105,7 +105,7 @@ def main():
 
         elif show_month:
             all_data = []
-            for dom in range(1, day.tm_mday + 1):
+            for dom in range(1, int(day.tm_mday) + 1):
                 print('Day {}'.format(dom))
                 day.tm_mday = dom
                 (headers, _, totals) = load_day(server_conn,
