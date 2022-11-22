@@ -381,7 +381,7 @@ class MyEnergi:
                 # Skip devices that don't exist.
                 if isinstance(v, list) and len(v) == 0:
                     continue
-                if e in ('asn', 'fwv'):
+                if e in ('asn', 'fwv', 'vhub'):
                     continue
                 for device_data in v:
                     if not isinstance(device_data, dict):
