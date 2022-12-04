@@ -55,6 +55,45 @@ E_CODES = {0: 'OK',
            26: 'Busy – Server is already sending a command to the device',
            27: 'Relay not fitted'}
 
+ZSH_CODES = {0: 'EV_STARTUP',
+             1: 'EV_DISC',
+             2: 'EV_JUST_DISCONNECTED',
+             3: 'EV_CONNECTED_START',
+             4: 'EV_CONNECTED',
+             5: 'EVSE_SURPLUS_AVAILABLE',
+             6: 'EVSE_LOCKED',
+             7: 'EVSE_WAIT_FOR_TEMP',
+             8: 'EVSE_WAITING_FOR_EV',
+             9: 'EV_CHARGE_DELAYED',
+             10: 'EV_CHARGE_COMPLETE',
+             11: 'EVSE_RCD_CHECK',
+             12: 'EVSE_CHARGING',
+             13: 'EVSE_IMPORTING',
+             14: 'EV_CHARGE_STOPPING',
+             15: 'EV_READY_LEGACY_START',
+             16: 'EV_READY_LEGACY',
+             17: 'EVSE_WAIT_FOR_LIMIT',
+             18: 'EV_VENT',
+             19: 'EVSE_RESTARTING',
+             20: 'EVSE_PHASE_SWITCHING_RESTART',
+             21: 'EV_WRONG_CABLE',
+             22: 'EVSE_BAD_PILOT',
+             23: 'EVSE_FAULT_LOCK',
+             24: 'EVSE_FAULT_OUTPUT',
+             25: 'EVSE_FAULT_PE',
+             26: 'EVSE_FAULT_COMS',
+             27: 'EVSE_SELFTEST_FAILED',
+             28: 'EVSE_FAULT_CONTACTOR',
+             29: 'EVSE_FAULT_RCD_TRIP',
+             30: 'EVSE_FAULT_OVERLOAD',
+             31: 'EVSE_FAULT_VOLTAGE_RANGE',
+             32: 'EVSE_FAULT_VOLTAGE_MISMATCH',
+             33: 'EVSE_WRONG_PHASE_ROTATION',
+             50: 'CHARGE_BLOCKED',
+             51: 'EV_PRECON',
+             52: 'EVSE_PHSW_DELAY',
+             53: 'EVSE_CHARGE_STOPPED'}
+
 
 log = logging.getLogger('myenergi')
 pp = pprint.PrettyPrinter()
@@ -281,6 +320,13 @@ class Zappi(MyEnergiDiverter):
         self.smart_boost_level = self._glimpse_safe(data, 'sbk')
         self.smart_boost_hour = self._glimpse_safe(data, 'sbh')
         self.smart_boost_minute = self._glimpse_safe(data, 'sbm')
+        zsh = self._glimpse_safe(data, 'zsh')
+        try:
+            self.zsh = ZSH_CODES[zsh]
+        except KeyError:
+            self.zsh = f'Unknown {zsh}'
+        log.debug('zsh status is %s', self.zsh)
+
         # https://myenergi.info/viewtopic.php?p=19026 for details
         # of locking.
         self.lock = self._glimpse_safe(data, 'lck')
