@@ -92,7 +92,10 @@ ZSH_CODES = {0: 'EV_STARTUP',
              50: 'CHARGE_BLOCKED',
              51: 'EV_PRECON',
              52: 'EVSE_PHSW_DELAY',
-             53: 'EVSE_CHARGE_STOPPED'}
+             53: 'EVSE_CHARGE_STOPPED',
+             54: 'EVSE_RANDOM_DELAY_WAIT',
+             55: 'EVSE_RANDOM_DELAY_RAMP_DOWN',
+             56: 'EVSE_RANDOM_DELAY_RAMP_UP'}
 
 
 log = logging.getLogger('myenergi')
